@@ -1,0 +1,42 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          secret-key: test-secret-key-with-at-least-32-bytes-long
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  datasource:
+    hikari:
+      # Concurrency tests fire hundreds of threads at once; starving them on connections would
+      # measure the pool rather than the locking strategy.
+      maximum-pool-size: 40
+      connection-timeout: 30000
+
+app:
+  timezone: Asia/Ho_Chi_Minh
+  seed:
+    demo-users: false
+  inventory-sync:
+    # Tests drive the outbox by calling processPendingBatch() directly so assertions stay
+    # deterministic; a background scheduler would race with them.
+    enabled: false
+  rate-limit:
+    # Off by default so functional tests are not throttled. RateLimiterTest turns it back on.
+    enabled: false
+    rules:
+      auth-login-identifier:
+        limit: 3
+        window: 15m
+
+logging:
+  level:
+    root: warn
+    com.shiro.flashsale: info
+    org.testcontainers: warn
+    liquibase: warn

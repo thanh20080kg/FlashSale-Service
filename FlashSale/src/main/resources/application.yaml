@@ -1,0 +1,104 @@
+spring:
+  application:
+    name: FlashSale
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:flashsale}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+    username: ${MYSQL_USERNAME:flashsale}
+    password: ${MYSQL_PASSWORD:flashsale_password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      # The purchase transaction is short (4 statements). Sized for ~500 TPS:
+      # 500 TPS * ~8ms in-transaction time ~= 4 busy connections, 60 leaves headroom
+      # for the listing endpoint, the sync worker and traffic spikes.
+      maximum-pool-size: ${DB_POOL_SIZE:60}
+      minimum-idle: ${DB_POOL_MIN_IDLE:10}
+      connection-timeout: 3000
+      validation-timeout: 2000
+      max-lifetime: 600000
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+          time_zone: ${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+        order_inserts: true
+        order_updates: true
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+      lettuce:
+        pool:
+          enabled: true
+          max-active: ${REDIS_POOL_MAX_ACTIVE:64}
+          max-idle: 16
+          min-idle: 4
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          secret-key: ${JWT_SECRET:local-dev-secret-please-change-me-32bytes}
+  web:
+    error:
+      include-message: never
+
+server:
+  tomcat:
+    threads:
+      max: ${TOMCAT_MAX_THREADS:400}
+    accept-count: 200
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+app:
+  # Every date/time decision (slot window, "one purchase per day") resolves against
+  # this zone, never the JVM default, so all instances agree regardless of host TZ.
+  timezone: ${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+  insecure-default-jwt-secret: local-dev-secret-please-change-me-32bytes
+  seed:
+    demo-users: ${APP_SEED_DEMO_USERS:false}
+    demo-user-password: ${APP_SEED_DEMO_PASSWORD:Password@123}
+    demo-user-balance: ${APP_SEED_DEMO_BALANCE:5000000}
+  auth:
+    token-ttl: 24h
+    otp-ttl: 5m
+    otp-max-attempts: 5
+    registration-ttl: 1h
+  sale:
+    current-items-cache-ttl: ${SALE_LISTING_CACHE_TTL:2s}
+  inventory-sync:
+    enabled: ${INVENTORY_SYNC_ENABLED:true}
+    interval: 1s
+    batch-size: 200
+    max-attempts: 10
+    retry-backoff: 5s
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    rules:
+      auth-login-ip: { limit: 120, window: 1m }
+      auth-login-identifier: { limit: 5, window: 15m }
+      auth-register-ip: { limit: 30, window: 1m }
+      auth-register-identifier: { limit: 3, window: 1h }
+      auth-otp-ip: { limit: 60, window: 1m }
+      auth-otp-identifier: { limit: 5, window: 15m }
+      sale-purchase-ip: { limit: 600, window: 1m }
+
+logging:
+  level:
+    root: INFO

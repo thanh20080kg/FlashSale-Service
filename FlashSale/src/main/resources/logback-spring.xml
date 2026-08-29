@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Each rule is configurable here: regex|||replacement. -->
+    <property name="MASK_EMAIL"
+              value="(?i)\b([a-z0-9._%+-]{1,2})([a-z0-9._%+-]*)(@[a-z0-9.-]+\.[a-z]{2,})\b|||KEEP_EMAIL"/>
+    <property name="MASK_PHONE"
+              value="(?&lt;!\d)(\+?)(\d{3})\d{2,9}(\d{3})(?!\d)|||KEEP_LAST_3"/>
+    <property name="MASK_OTP"
+              value="(?&lt;!\d)\d{6}(?!\d)|||******"/>
+    <conversionRule conversionWord="mask"
+                    class="com.shiro.flashsale.logging.PiiMaskingConverter"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p ${PID:- } --- [%15.15t] %-40.40logger{39}: %mask(%msg)&#10;%mask(%ex)</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>8192</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="CONSOLE"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+    </root>
+</configuration>

@@ -1,0 +1,203 @@
+databaseChangeLog:
+  # Slots recur every day, so the remaining-quantity counter has to recur with them.
+  # It moves out of flash_sale_items (static config) into its own per-day row.
+  - changeSet:
+      id: 002-01-flash-sale-item-quotas
+      author: flashsale
+      changes:
+        - createTable:
+            tableName: flash_sale_item_quotas
+            columns:
+              - column:
+                  name: id
+                  type: varchar(36)
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: flash_sale_item_id
+                  type: varchar(36)
+                  constraints: { nullable: false }
+              - column:
+                  name: sale_date
+                  type: date
+                  constraints: { nullable: false }
+              - column:
+                  name: total_quantity
+                  type: bigint
+                  constraints: { nullable: false }
+              - column:
+                  name: remaining_quantity
+                  type: bigint
+                  constraints: { nullable: false }
+        - addUniqueConstraint:
+            tableName: flash_sale_item_quotas
+            columnNames: flash_sale_item_id, sale_date
+            constraintName: uk_item_sale_date
+        - addForeignKeyConstraint:
+            baseTableName: flash_sale_item_quotas
+            baseColumnNames: flash_sale_item_id
+            referencedTableName: flash_sale_items
+            referencedColumnNames: id
+            constraintName: fk_quota_flash_sale_item
+
+  - changeSet:
+      id: 002-02-flash-sale-items-active
+      author: flashsale
+      changes:
+        - addColumn:
+            tableName: flash_sale_items
+            columns:
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints: { nullable: false }
+        - dropColumn:
+            tableName: flash_sale_items
+            columnName: remaining_quantity
+
+  - changeSet:
+      id: 002-03-otp-attempts
+      author: flashsale
+      changes:
+        - addColumn:
+            tableName: otp_challenges
+            columns:
+              - column:
+                  name: attempts
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+        - createIndex:
+            tableName: otp_challenges
+            indexName: idx_otp_expiry
+            columns:
+              - column: { name: expires_at }
+
+  # Transactional outbox. Producers append here inside their own transaction; the worker drains it.
+  - changeSet:
+      id: 002-04-inventory-sync-events
+      author: flashsale
+      changes:
+        - createTable:
+            tableName: inventory_sync_events
+            columns:
+              - column:
+                  name: id
+                  type: varchar(36)
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: event_key
+                  type: varchar(190)
+                  constraints: { nullable: false }
+              - column:
+                  name: event_type
+                  type: varchar(40)
+                  constraints: { nullable: false }
+              - column:
+                  name: product_id
+                  type: varchar(36)
+                  constraints: { nullable: false }
+              - column:
+                  name: quantity_delta
+                  type: bigint
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints: { nullable: false }
+              - column:
+                  name: attempts
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: available_at
+                  type: datetime
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: datetime
+                  constraints: { nullable: false }
+              - column:
+                  name: processed_at
+                  type: datetime
+              - column:
+                  name: last_error
+                  type: varchar(500)
+        # The idempotency key: the same logical change can never be enqueued twice.
+        - addUniqueConstraint:
+            tableName: inventory_sync_events
+            columnNames: event_key
+            constraintName: uk_inventory_event_key
+        - createIndex:
+            tableName: inventory_sync_events
+            indexName: idx_inventory_event_claim
+            columns:
+              - column: { name: status }
+              - column: { name: available_at }
+              - column: { name: created_at }
+
+  - changeSet:
+      id: 002-05-inventory-movements
+      author: flashsale
+      changes:
+        - createTable:
+            tableName: inventory_movements
+            columns:
+              - column:
+                  name: id
+                  type: varchar(36)
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: event_id
+                  type: varchar(36)
+                  constraints: { nullable: false }
+              - column:
+                  name: product_id
+                  type: varchar(36)
+                  constraints: { nullable: false }
+              - column:
+                  name: event_type
+                  type: varchar(40)
+                  constraints: { nullable: false }
+              - column:
+                  name: quantity_delta
+                  type: bigint
+                  constraints: { nullable: false }
+              - column:
+                  name: balance_after
+                  type: bigint
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: datetime
+                  constraints: { nullable: false }
+        # Second idempotency guard: an event can only ever produce one ledger row.
+        - addUniqueConstraint:
+            tableName: inventory_movements
+            columnNames: event_id
+            constraintName: uk_inventory_movement_event
+        - createIndex:
+            tableName: inventory_movements
+            indexName: idx_inventory_movement_product
+            columns:
+              - column: { name: product_id }
+              - column: { name: created_at }
+
+  - changeSet:
+      id: 002-06-slot-lookup-index
+      author: flashsale
+      changes:
+        - createIndex:
+            tableName: flash_sale_slots
+            indexName: idx_slot_window
+            columns:
+              - column: { name: active }
+              - column: { name: start_time }
+              - column: { name: end_time }
+        - createIndex:
+            tableName: flash_sale_purchases
+            indexName: idx_purchase_customer_created
+            columns:
+              - column: { name: customer_id }
+              - column: { name: created_at }
