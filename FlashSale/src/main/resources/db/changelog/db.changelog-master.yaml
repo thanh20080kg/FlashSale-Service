@@ -1,7 +1,5 @@
 databaseChangeLog:
   - include:
-      file: db/changelog/changes/001-create-notification-templates.yaml
-  - include:
-      file: db/changelog/changes/002-daily-quota-and-inventory-sync.yaml
+      file: db/changelog/changes/001-flashsale-schema.yaml
   - include:
       file: db/changelog/changes/003-seed-flash-sale-configuration.yaml

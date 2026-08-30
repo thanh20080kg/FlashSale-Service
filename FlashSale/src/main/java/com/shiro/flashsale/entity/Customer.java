@@ -1,52 +1,40 @@
 package com.shiro.flashsale.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Customer profile belonging to an authenticated {@link User}.
- *
- * <p>{@code balance} is only ever moved by the conditional atomic UPDATEs in {@code
- * CustomerRepository}, never by dirty-checking, so concurrent purchases cannot overdraw it.
- */
+/** Sale-side projection of the customer row owned by Authentication. */
 @Entity
-@Table(
-    name = "customers",
-    uniqueConstraints = @UniqueConstraint(name = "uk_customer_user", columnNames = "user_id"))
+@Table(name = "customers")
 public class Customer {
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
-  @OneToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+  @Column(name = "user_id", nullable = false)
+  private UUID userId;
 
-  @Column(length = 100)
+  @Column(name = "display_name", length = 100)
   private String displayName;
 
   @Column(nullable = false, precision = 19, scale = 2)
-  private BigDecimal balance = BigDecimal.ZERO;
+  private BigDecimal balance;
 
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
   protected Customer() {}
 
-  public Customer(User user, String displayName, Instant createdAt) {
-    this.user = user;
-    this.displayName = displayName;
-    this.createdAt = createdAt;
-  }
-
   public UUID getId() {
     return id;
   }
 
-  public User getUser() {
-    return user;
+  public UUID getUserId() {
+    return userId;
   }
 
   public String getDisplayName() {

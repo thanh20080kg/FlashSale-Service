@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.ObjectUtils;
 
 /** Reads masking rules from logback-spring.xml; changing rules needs no code rebuild. */
 public class PiiMaskingConverter extends CompositeConverter<ILoggingEvent> {
@@ -25,7 +26,9 @@ public class PiiMaskingConverter extends CompositeConverter<ILoggingEvent> {
             entry -> {
               String propertyName = entry.getKey();
               String rule = entry.getValue();
-              if (rule == null || rule.isBlank()) return;
+              if (ObjectUtils.isEmpty(rule) || rule.isBlank()) {
+                return;
+              }
               String[] parts = rule.split("\\Q" + SEPARATOR + "\\E", 2);
               if (parts.length != 2) {
                 addError("Invalid masking rule " + propertyName + ". Expected regex|||replacement");
@@ -42,7 +45,9 @@ public class PiiMaskingConverter extends CompositeConverter<ILoggingEvent> {
 
   @Override
   protected String transform(ILoggingEvent event, String message) {
-    if (message == null) return null;
+    if (ObjectUtils.isEmpty(message)) {
+      return message;
+    }
     String masked = message;
     for (MaskRule rule : rules) {
       Matcher matcher = rule.pattern().matcher(masked);

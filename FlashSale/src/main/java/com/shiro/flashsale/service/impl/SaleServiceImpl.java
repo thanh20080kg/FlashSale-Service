@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -75,7 +76,9 @@ public class SaleServiceImpl implements SaleService {
     String cacheKey = LISTING_CACHE_KEY + today + ":" + now.getHour() + ":" + now.getMinute();
 
     List<SaleDtos.SaleItemResponse> cached = readCache(cacheKey);
-    if (cached != null) return cached;
+    if (ObjectUtils.isNotEmpty(cached)) {
+      return cached;
+    }
 
     List<SaleDtos.SaleItemResponse> response = loadCurrentItems(today, now);
     writeCache(cacheKey, response);
@@ -85,7 +88,9 @@ public class SaleServiceImpl implements SaleService {
   /** Both queries join-fetch what they need, so nothing is lazily resolved after the call. */
   private List<SaleDtos.SaleItemResponse> loadCurrentItems(LocalDate today, LocalTime now) {
     List<FlashSaleItem> active = items.findCurrent(now);
-    if (active.isEmpty()) return List.of();
+    if (active.isEmpty()) {
+      return List.of();
+    }
 
     Map<UUID, Long> remaining =
         quotas
@@ -170,7 +175,9 @@ public class SaleServiceImpl implements SaleService {
   private List<SaleDtos.SaleItemResponse> readCache(String key) {
     try {
       String raw = redis.opsForValue().get(key);
-      if (raw == null) return null;
+      if (ObjectUtils.isEmpty(raw)) {
+        return null;
+      }
       return objectMapper.readValue(raw, new TypeReference<List<SaleDtos.SaleItemResponse>>() {});
     } catch (Exception ex) {
       // The cache is an optimisation, never a dependency: fall through to the database.

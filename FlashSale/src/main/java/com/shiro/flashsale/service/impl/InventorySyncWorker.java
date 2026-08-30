@@ -23,12 +23,14 @@ public class InventorySyncWorker {
   }
 
   @Scheduled(
-      fixedDelayString = "${app.inventory-sync.interval:1s}",
-      initialDelayString = "${app.inventory-sync.interval:1s}")
+      fixedDelayString = "${app.inventory-sync.interval}",
+      initialDelayString = "${app.inventory-sync.interval}")
   public void drainOutbox() {
     try {
       int processed = syncService.processPendingBatch();
-      if (processed > 0) log.debug("Inventory sync processed {} event(s)", processed);
+      if (processed > 0) {
+        log.debug("Inventory sync processed {} event(s)", processed);
+      }
     } catch (RuntimeException ex) {
       // Never let a failing tick kill the scheduler; the next tick re-claims the same rows.
       log.error("Inventory sync batch failed", ex);

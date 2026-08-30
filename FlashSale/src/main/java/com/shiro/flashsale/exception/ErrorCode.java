@@ -37,13 +37,6 @@ public enum ErrorCode {
   INVALID_REQUEST(HttpStatus.BAD_REQUEST, "Invalid request"),
   VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Invalid request"),
 
-  // --- notification ---
-  NOTIFICATION_TEMPLATE_NOT_FOUND(
-      HttpStatus.INTERNAL_SERVER_ERROR, "Notification template not found"),
-  NOTIFICATION_TEMPLATE_TYPE_MISMATCH(
-      HttpStatus.INTERNAL_SERVER_ERROR, "Template type does not match channel"),
-  NOTIFICATION_PARAMETER_MISSING(HttpStatus.INTERNAL_SERVER_ERROR, "Missing template parameter"),
-
   INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error");
 
   private final HttpStatus status;

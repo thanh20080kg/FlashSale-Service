@@ -79,7 +79,9 @@ public class InventorySyncServiceImpl implements InventorySyncService {
     Instant now = Instant.now();
     List<InventoryEvent> batch =
         events.claimPending(now, properties.getInventorySync().getBatchSize());
-    if (batch.isEmpty()) return 0;
+    if (batch.isEmpty()) {
+      return 0;
+    }
 
     for (InventoryEvent event : batch) {
       try {

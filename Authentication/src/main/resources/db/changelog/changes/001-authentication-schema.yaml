@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: auth-schema-001
+      author: authentication
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE users (id VARCHAR(36) NOT NULL PRIMARY KEY, channel VARCHAR(20) NOT NULL, identifier VARCHAR(190) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, verified BOOLEAN NOT NULL, role VARCHAR(20) NOT NULL DEFAULT 'BUYER', created_at DATETIME NOT NULL);
+              CREATE TABLE customers (id VARCHAR(36) NOT NULL PRIMARY KEY, user_id VARCHAR(36) NOT NULL UNIQUE, display_name VARCHAR(100), balance DECIMAL(19,2) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL, CONSTRAINT fk_customer_user FOREIGN KEY (user_id) REFERENCES users(id));
+              CREATE TABLE otp_challenges (id VARCHAR(36) NOT NULL PRIMARY KEY, channel VARCHAR(20) NOT NULL, identifier VARCHAR(190) NOT NULL, purpose VARCHAR(30) NOT NULL, code_hash VARCHAR(255) NOT NULL, expires_at DATETIME NOT NULL, consumed BOOLEAN NOT NULL, attempts INT NOT NULL DEFAULT 0);
+              CREATE INDEX idx_otp_lookup ON otp_challenges(identifier, purpose, consumed);
+              CREATE INDEX idx_otp_expiry ON otp_challenges(expires_at);

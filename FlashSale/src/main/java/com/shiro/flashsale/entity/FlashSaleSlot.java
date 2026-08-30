@@ -3,6 +3,7 @@ package com.shiro.flashsale.entity;
 import jakarta.persistence.*;
 import java.time.LocalTime;
 import java.util.UUID;
+import lombok.Setter;
 
 /**
  * A recurring daily time window. When {@code endTime <= startTime} the window wraps past midnight
@@ -24,6 +25,7 @@ public class FlashSaleSlot {
   @Column(nullable = false)
   private LocalTime endTime;
 
+  @Setter
   @Column(nullable = false)
   private boolean active = true;
 
@@ -55,16 +57,14 @@ public class FlashSaleSlot {
     return active;
   }
 
-  public void setActive(boolean active) {
-    this.active = active;
-  }
-
   public boolean isOvernight() {
     return !endTime.isAfter(startTime);
   }
 
   public boolean containsAt(LocalTime time) {
-    if (isOvernight()) return !time.isBefore(startTime) || time.isBefore(endTime);
+    if (isOvernight()) {
+      return !time.isBefore(startTime) || time.isBefore(endTime);
+    }
     return !time.isBefore(startTime) && time.isBefore(endTime);
   }
 }

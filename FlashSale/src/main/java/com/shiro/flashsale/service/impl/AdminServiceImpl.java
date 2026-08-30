@@ -16,6 +16,7 @@ import com.shiro.flashsale.service.InventorySyncService;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,8 +86,9 @@ public class AdminServiceImpl implements AdminService {
   @Override
   @Transactional
   public AdminDtos.ProductResponse createProduct(AdminDtos.CreateProductRequest request) {
-    if (products.existsBySku(request.sku()))
+    if (products.existsBySku(request.sku())) {
       throw new ApiException(ErrorCode.DUPLICATE_RESOURCE, "SKU already exists");
+    }
 
     Product product = products.save(new Product(request.sku(), request.name()));
     Inventory inventory = inventories.save(new Inventory(product, request.initialStock()));
@@ -119,16 +121,20 @@ public class AdminServiceImpl implements AdminService {
   public AdminDtos.ProductResponse updateProduct(
       UUID productId, AdminDtos.UpdateProductRequest request) {
     Product product = requireProduct(productId);
-    if (request.name() != null && !request.name().isBlank()) product.setName(request.name());
+    if (ObjectUtils.isNotEmpty(request.name()) && !request.name().isBlank()) {
+      product.setName(request.name());
+    }
 
-    if (request.active() != null && request.active() != product.isActive()) {
+    if (ObjectUtils.isNotEmpty(request.active())
+        && ObjectUtils.notEqual(request.active(), product.isActive())) {
       product.setActive(request.active());
       if (!request.active()) {
         // Deactivating a product has to reach flash sale state too. Routing it through the outbox
         // means the follow-up happens exactly once, even if this instance dies right after commit.
         String eventKey = "PRODUCT_DEACTIVATED:" + productId + ":" + LocalDate.now();
-        if (!events.existsByEventKey(eventKey))
+        if (!events.existsByEventKey(eventKey)) {
           sync.enqueue(eventKey, InventoryEventType.PRODUCT_DEACTIVATED, productId, 0);
+        }
       }
     }
     products.save(product);
@@ -142,18 +148,21 @@ public class AdminServiceImpl implements AdminService {
   public AdminDtos.ProductResponse adjustInventory(
       UUID productId, AdminDtos.AdjustInventoryRequest request) {
     Product product = requireProduct(productId);
-    if (request.delta() == 0)
+    if (request.delta() == 0) {
       throw new ApiException(ErrorCode.INVALID_REQUEST, "delta must not be zero");
+    }
 
     // Guarded atomic UPDATE: stock can be corrected concurrently and still never goes negative.
-    if (inventories.adjust(productId, request.delta()) == 0)
+    if (inventories.adjust(productId, request.delta()) == 0) {
       throw new ApiException(ErrorCode.INVALID_REQUEST, "Adjustment would drive stock negative");
+    }
 
     // The reference is the idempotency key: replaying the same operator action is a no-op.
     String eventKey = "STOCK_ADJUST:" + productId + ":" + request.reference();
-    if (events.existsByEventKey(eventKey))
+    if (events.existsByEventKey(eventKey)) {
       throw new ApiException(
           ErrorCode.DUPLICATE_RESOURCE, "This adjustment reference was already applied");
+    }
     sync.enqueue(eventKey, InventoryEventType.STOCK_ADJUSTED, productId, request.delta());
 
     Inventory inventory = requireInventory(productId);
@@ -203,7 +212,9 @@ public class AdminServiceImpl implements AdminService {
   public AdminDtos.SlotResponse updateSlot(UUID slotId, AdminDtos.UpdateSlotRequest request) {
     FlashSaleSlot slot =
         slots.findById(slotId).orElseThrow(() -> ApiException.of(ErrorCode.SLOT_NOT_FOUND));
-    if (request.active() != null) slot.setActive(request.active());
+    if (ObjectUtils.isNotEmpty(request.active())) {
+      slot.setActive(request.active());
+    }
     return toSlotResponse(slots.save(slot));
   }
 
@@ -237,9 +248,15 @@ public class AdminServiceImpl implements AdminService {
   public AdminDtos.ItemResponse updateItem(UUID itemId, AdminDtos.UpdateItemRequest request) {
     FlashSaleItem item =
         items.findById(itemId).orElseThrow(() -> ApiException.of(ErrorCode.ITEM_NOT_FOUND));
-    if (request.amount() != null) item.setAmount(request.amount());
-    if (request.quantity() != null) item.setQuantity(request.quantity());
-    if (request.active() != null) item.setActive(request.active());
+    if (ObjectUtils.isNotEmpty(request.amount())) {
+      item.setAmount(request.amount());
+    }
+    if (ObjectUtils.isNotEmpty(request.quantity())) {
+      item.setQuantity(request.quantity());
+    }
+    if (ObjectUtils.isNotEmpty(request.active())) {
+      item.setActive(request.active());
+    }
     return toItemResponse(items.save(item));
   }
 

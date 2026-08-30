@@ -66,11 +66,13 @@ public class PurchaseExecutor {
             .orElseThrow(() -> ApiException.of(ErrorCode.CUSTOMER_NOT_FOUND));
 
     // Fast path only. The unique key below is the actual guarantee.
-    if (purchases.existsByCustomerIdAndPurchaseDate(customer.getId(), saleDate))
+    if (purchases.existsByCustomerIdAndPurchaseDate(customer.getId(), saleDate)) {
       throw ApiException.of(ErrorCode.DAILY_LIMIT_REACHED);
+    }
 
-    if (customers.debit(customer.getId(), item.getAmount()) == 0)
+    if (customers.debit(customer.getId(), item.getAmount()) == 0) {
       throw ApiException.of(ErrorCode.INSUFFICIENT_BALANCE);
+    }
 
     // The item was read outside this transaction; reference it by id rather than re-attaching it.
     FlashSaleItem itemRef = entityManager.getReference(FlashSaleItem.class, item.getId());
@@ -92,9 +94,12 @@ public class PurchaseExecutor {
             now));
 
     // --- contended rows, kept last ---
-    if (inventory.reserve(item.getProduct().getId()) == 0)
+    if (inventory.reserve(item.getProduct().getId()) == 0) {
       throw ApiException.of(ErrorCode.OUT_OF_STOCK);
-    if (quotas.decrement(item.getId(), saleDate) == 0) throw ApiException.of(ErrorCode.SOLD_OUT);
+    }
+    if (quotas.decrement(item.getId(), saleDate) == 0) {
+      throw ApiException.of(ErrorCode.SOLD_OUT);
+    }
 
     return new SaleDtos.PurchaseResponse(
         purchase.getId(),

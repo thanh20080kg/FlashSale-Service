@@ -8,15 +8,19 @@ spring:
     hibernate:
       ddl-auto: none
     open-in-view: false
+  datasource:
+    url: jdbc:h2:mem:flashsale-test;DB_CLOSE_DELAY=-1;MODE=MySQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    hikari:
+      # Concurrency tests fire hundreds of threads at once.
+      maximum-pool-size: 40
+      connection-timeout: 30000
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
-  datasource:
-    hikari:
-      # Concurrency tests fire hundreds of threads at once; starving them on connections would
-      # measure the pool rather than the locking strategy.
-      maximum-pool-size: 40
-      connection-timeout: 30000
+    default-schema: PUBLIC
 
 app:
   timezone: Asia/Ho_Chi_Minh

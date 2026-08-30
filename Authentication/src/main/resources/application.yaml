@@ -1,0 +1,66 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: Authentication
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_SCHEMA:authentication}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+    username: ${MYSQL_USERNAME:authentication_user}
+    password: ${MYSQL_PASSWORD:P@ssword}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    default-schema: ${MYSQL_SCHEMA:authentication}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    # Docker exposes Kafka's external listener on 29092 for applications running on the host.
+    # Containerized services override this with KAFKA_BOOTSTRAP_SERVERS=kafka:9092.
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          secret-key: ${JWT_SECRET:2d7d27dba2c321d04f8b8dbdcdd1f9ef57811db298bc36375f98a169aa102409}
+
+app:
+  timezone: ${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+  auth:
+    token-ttl: 24h
+    otp-ttl: 5m
+    otp-max-attempts: 5
+    registration-ttl: 15m
+  kafka:
+    topic: ${KAFKA_NOTIFICATION_TOPIC:notification.requested}
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    rules:
+      auth-login-ip: { limit: 5, window: 1m }
+      auth-register-ip: { limit: 5, window: 1m }
+      auth-otp-ip: { limit: 5, window: 1m }
+      auth-login-identifier: { limit: 25, window: 15m }
+      auth-register-identifier: { limit: 10, window: 1h }
+      auth-otp-identifier: { limit: 25, window: 15m }
+  otp-clear:
+    enabled: ${INVENTORY_SYNC_ENABLED:true}
+    interval: 60m
+    initial-delay: 10m
+    retention: 1d
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

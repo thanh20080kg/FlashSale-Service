@@ -19,7 +19,9 @@ public class FlashSaleQuotaService {
   }
 
   public void ensureQuotaForToday(UUID itemId, LocalDate saleDate, long quantity) {
-    if (quotas.existsByFlashSaleItemIdAndSaleDate(itemId, saleDate)) return;
+    if (quotas.existsByFlashSaleItemIdAndSaleDate(itemId, saleDate)) {
+      return;
+    }
     try {
       creator.create(itemId, saleDate, quantity);
     } catch (DataIntegrityViolationException alreadyCreatedConcurrently) {

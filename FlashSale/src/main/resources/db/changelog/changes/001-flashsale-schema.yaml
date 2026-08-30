@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: flashsale-schema-001
+      author: flashsale
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE customers (id VARCHAR(36) NOT NULL PRIMARY KEY, user_id VARCHAR(36) NOT NULL UNIQUE, display_name VARCHAR(100), balance DECIMAL(19,2) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL);
+              CREATE TABLE products (id VARCHAR(36) NOT NULL PRIMARY KEY, sku VARCHAR(64) NOT NULL UNIQUE, name VARCHAR(200) NOT NULL, active BOOLEAN NOT NULL);
+              CREATE TABLE inventories (id VARCHAR(36) NOT NULL PRIMARY KEY, product_id VARCHAR(36) NOT NULL UNIQUE, available_quantity BIGINT NOT NULL, sold_quantity BIGINT NOT NULL, CONSTRAINT fk_inventory_product FOREIGN KEY (product_id) REFERENCES products(id));
+              CREATE TABLE flash_sale_slots (id VARCHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(100) NOT NULL, start_time TIME NOT NULL, end_time TIME NOT NULL, active BOOLEAN NOT NULL);
+              CREATE TABLE flash_sale_items (id VARCHAR(36) NOT NULL PRIMARY KEY, slot_id VARCHAR(36) NOT NULL, product_id VARCHAR(36) NOT NULL, amount DECIMAL(19,2) NOT NULL, quantity BIGINT NOT NULL, active BOOLEAN NOT NULL, CONSTRAINT uk_slot_product UNIQUE (slot_id, product_id), CONSTRAINT fk_flash_sale_item_slot FOREIGN KEY (slot_id) REFERENCES flash_sale_slots(id), CONSTRAINT fk_flash_sale_item_product FOREIGN KEY (product_id) REFERENCES products(id));
+              CREATE TABLE flash_sale_purchases (id VARCHAR(36) NOT NULL PRIMARY KEY, customer_id VARCHAR(36) NOT NULL, flash_sale_item_id VARCHAR(36) NOT NULL, amount DECIMAL(19,2) NOT NULL, purchase_date DATE NOT NULL, created_at DATETIME NOT NULL, CONSTRAINT uk_customer_purchase_day UNIQUE (customer_id, purchase_date), CONSTRAINT fk_purchase_flash_sale_item FOREIGN KEY (flash_sale_item_id) REFERENCES flash_sale_items(id));
+              CREATE TABLE flash_sale_item_quotas (id VARCHAR(36) NOT NULL PRIMARY KEY, flash_sale_item_id VARCHAR(36) NOT NULL, sale_date DATE NOT NULL, total_quantity BIGINT NOT NULL, remaining_quantity BIGINT NOT NULL, CONSTRAINT uk_item_sale_date UNIQUE (flash_sale_item_id, sale_date), CONSTRAINT fk_quota_flash_sale_item FOREIGN KEY (flash_sale_item_id) REFERENCES flash_sale_items(id));
+              CREATE TABLE inventory_sync_events (id VARCHAR(36) NOT NULL PRIMARY KEY, event_key VARCHAR(190) NOT NULL UNIQUE, event_type VARCHAR(40) NOT NULL, product_id VARCHAR(36) NOT NULL, quantity_delta BIGINT NOT NULL, status VARCHAR(20) NOT NULL, attempts INT NOT NULL DEFAULT 0, available_at DATETIME NOT NULL, created_at DATETIME NOT NULL, processed_at DATETIME, last_error VARCHAR(500));
+              CREATE TABLE inventory_movements (id VARCHAR(36) NOT NULL PRIMARY KEY, event_id VARCHAR(36) NOT NULL UNIQUE, product_id VARCHAR(36) NOT NULL, event_type VARCHAR(40) NOT NULL, quantity_delta BIGINT NOT NULL, balance_after BIGINT NOT NULL, created_at DATETIME NOT NULL);
+              CREATE INDEX idx_slot_window ON flash_sale_slots(active, start_time, end_time);
+              CREATE INDEX idx_purchase_customer_created ON flash_sale_purchases(customer_id, created_at);
+              CREATE INDEX idx_inventory_event_claim ON inventory_sync_events(status, available_at, created_at);
+              CREATE INDEX idx_inventory_movement_product ON inventory_movements(product_id, created_at);

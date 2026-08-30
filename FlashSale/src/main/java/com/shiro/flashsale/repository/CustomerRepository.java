@@ -12,13 +12,9 @@ import org.springframework.data.repository.query.Param;
 public interface CustomerRepository extends JpaRepository<Customer, UUID> {
   Optional<Customer> findByUserId(UUID userId);
 
-  /** Conditional debit: returns 0 instead of overdrawing when the balance is short. */
   @Modifying
   @Query(
-      """
-      update Customer c set c.balance = c.balance - :amount
-      where c.id = :id and c.balance >= :amount
-      """)
+      "update Customer c set c.balance = c.balance - :amount where c.id = :id and c.balance >= :amount")
   int debit(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 
   @Modifying

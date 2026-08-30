@@ -1,6 +1,5 @@
 package com.shiro.flashsale.config;
 
-import com.shiro.flashsale.security.RateLimitFilter;
 import com.shiro.flashsale.security.SecurityErrorResponder;
 import com.shiro.flashsale.security.TokenAuthenticationFilter;
 import java.util.List;
@@ -53,9 +52,8 @@ public class SecurityConfig {
                     .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true)))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/api/v1/auth/**", "/error")
-                    .permitAll()
-                    .requestMatchers("/actuator/health/**", "/actuator/info")
+                auth.requestMatchers(
+                        "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/actuator/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/flash-sales/current")
                     .permitAll()
@@ -97,15 +95,6 @@ public class SecurityConfig {
     FilterRegistrationBean<TokenAuthenticationFilter> registration =
         new FilterRegistrationBean<>(filter);
     registration.setEnabled(false);
-    return registration;
-  }
-
-  /** The rate limiter must run before authentication, so it stays a container-level filter. */
-  @Bean
-  FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter filter) {
-    FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>(filter);
-    registration.setOrder(Integer.MIN_VALUE + 100);
-    registration.addUrlPatterns("/api/*");
     return registration;
   }
 }

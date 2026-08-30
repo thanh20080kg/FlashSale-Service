@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: Notification
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_SCHEMA:notification}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+    username: ${MYSQL_USERNAME:notification_user}
+    password: ${MYSQL_PASSWORD:P@ssword}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    default-schema: ${MYSQL_SCHEMA:notification}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    # Docker exposes Kafka's external listener on 29092 for applications running on the host.
+    # Containerized services override this with KAFKA_BOOTSTRAP_SERVERS=kafka:9092.
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+
+server:
+  port: ${SERVER_PORT:8082}
+
+app:
+  kafka:
+    topic: ${KAFKA_NOTIFICATION_TOPIC:notification.requested}
+    group-id: ${KAFKA_NOTIFICATION_GROUP_ID:notification-service}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

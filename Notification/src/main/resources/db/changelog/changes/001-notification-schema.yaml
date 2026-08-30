@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: notification-schema-001
+      author: notification
+      changes:
+        - createTable:
+            tableName: notification_templates
+            columns:
+              - column: { name: id, type: varchar(36), constraints: { primaryKey: true, nullable: false } }
+              - column: { name: code, type: varchar(100), constraints: { nullable: false, unique: true, uniqueConstraintName: uk_notification_template_code } }
+              - column: { name: content, type: clob, constraints: { nullable: false } }
+              - column: { name: type, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: created_at, type: datetime, constraints: { nullable: false } }
+              - column: { name: updated_at, type: datetime, constraints: { nullable: false } }
+        - insert:
+            tableName: notification_templates
+            columns:
+              - column: { name: id, value: "3e4f2a90-7658-4f03-bf08-000000000001" }
+              - column: { name: code, value: AUTH_REGISTER_EMAIL_OTP }
+              - column: { name: content, value: "Your FlashSale verification code is {{otp}}." }
+              - column: { name: type, value: EMAIL }
+              - column: { name: created_at, valueDate: "2026-01-01T00:00:00" }
+              - column: { name: updated_at, valueDate: "2026-01-01T00:00:00" }
+        - insert:
+            tableName: notification_templates
+            columns:
+              - column: { name: id, value: "3e4f2a90-7658-4f03-bf08-000000000002" }
+              - column: { name: code, value: AUTH_REGISTER_SMS_OTP }
+              - column: { name: content, value: "Your FlashSale verification code is {{otp}}" }
+              - column: { name: type, value: SMS }
+              - column: { name: created_at, valueDate: "2026-01-01T00:00:00" }
+              - column: { name: updated_at, valueDate: "2026-01-01T00:00:00" }

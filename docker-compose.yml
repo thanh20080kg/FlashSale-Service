@@ -5,14 +5,19 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: flashsale
-      MYSQL_USER: flashsale
-      MYSQL_PASSWORD: flashsale_password
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: flashsale_admin
+      MYSQL_PASSWORD: P@ssword
+      MYSQL_ROOT_PASSWORD: P@ssword
+      AUTH_DB_PASSWORD: P@ssword
+      NOTIFICATION_DB_PASSWORD: P@ssword
+      FLASHSALE_DB_PASSWORD: P@ssword
+      PAYMENT_DB_PASSWORD: P@ssword
     command: ["--default-time-zone=+07:00", "--max-connections=500"]
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
@@ -34,10 +39,87 @@ services:
       timeout: 5s
       retries: 10
 
-  app:
+  kafka:
+    image: apache/kafka:3.8.1
+    container_name: flashsale-kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
+    ports:
+      - "29092:29092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: flashsale-kafka-ui
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - "8085:8080"
+
+  authentication:
+    build:
+      context: ./Authentication
+    image: authentication-service:local
+    container_name: authentication
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8081
+      MYSQL_SCHEMA: authentication
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: flashsale
+      MYSQL_USERNAME: authentication_user
+      MYSQL_PASSWORD: P@ssword
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_NOTIFICATION_TOPIC: notification.requested
+      JWT_SECRET: 2d7d27dba2c321d04f8b8dbdcdd1f9ef57811db298bc36375f98a169aa102409
+      APP_TIMEZONE: Asia/Ho_Chi_Minh
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8081/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  flashsale:
     build:
       context: ./FlashSale
     image: flashsale-service:local
+    container_name: flashsale
     restart: unless-stopped
     depends_on:
       mysql:
@@ -45,14 +127,15 @@ services:
       redis:
         condition: service_healthy
     environment:
+      MYSQL_SCHEMA: flashsale
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: flashsale
-      MYSQL_USERNAME: flashsale
-      MYSQL_PASSWORD: flashsale_password
+      MYSQL_USERNAME: flashsale_user
+      MYSQL_PASSWORD: P@ssword
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET:-local-dev-secret-please-change-me-32bytes}
+      JWT_SECRET: 2d7d27dba2c321d04f8b8dbdcdd1f9ef57811db298bc36375f98a169aa102409
       APP_TIMEZONE: Asia/Ho_Chi_Minh
       APP_SEED_DEMO_USERS: "true"
     ports:
@@ -65,6 +148,62 @@ services:
     # Scale to prove the design is multi-instance safe:
     #   docker compose up -d --scale app=3   (drop the host port mapping first)
 
+  notification:
+    build:
+      context: ./Notification
+    image: notification-service:local
+    container_name: notification
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8082
+      MYSQL_SCHEMA: notification
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: flashsale
+      MYSQL_USERNAME: notification_user
+      MYSQL_PASSWORD: P@ssword
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_NOTIFICATION_TOPIC: notification.requested
+      KAFKA_NOTIFICATION_GROUP_ID: notification-service
+      APP_TIMEZONE: Asia/Ho_Chi_Minh
+    ports:
+      - "8082:8082"
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8082/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  payment:
+    build:
+      context: ./Payment
+    image: payment-service:local
+    container_name: payment
+    restart: unless-stopped
+    environment:
+      MYSQL_SCHEMA: payment
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USERNAME: payment_user
+      MYSQL_PASSWORD: P@ssword
+    ports:
+      - "8083:8083"
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8083/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
 volumes:
   mysql_data:
   redis_data:
+  kafka_data:

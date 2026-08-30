@@ -5,6 +5,7 @@ import com.shiro.flashsale.constants.InventoryEventType;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
+import org.apache.commons.lang3.ObjectUtils;
 
 /**
  * Transactional outbox row. It is written in the same database transaction as the change that
@@ -77,7 +78,9 @@ public class InventoryEvent {
   }
 
   private static String truncate(String value) {
-    if (value == null) return null;
+    if (ObjectUtils.isEmpty(value)) {
+      return null;
+    }
     return value.length() <= 500 ? value : value.substring(0, 500);
   }
 

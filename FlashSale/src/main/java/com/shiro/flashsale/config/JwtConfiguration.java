@@ -18,8 +18,9 @@ public class JwtConfiguration {
   SecretKey jwtSecretKey(
       @Value("${spring.security.oauth2.resourceserver.jwt.secret-key}") String secret) {
     byte[] key = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-    if (key.length < 32)
+    if (key.length < 32) {
       throw new IllegalStateException("JWT_SECRET must contain at least 32 bytes");
+    }
     return new SecretKeySpec(key, "HmacSHA256");
   }
 

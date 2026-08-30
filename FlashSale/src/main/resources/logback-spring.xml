@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- Each rule is configurable here: regex|||replacement. -->
-    <property name="MASK_EMAIL"
+    <property scope="context" name="MASK_EMAIL"
               value="(?i)\b([a-z0-9._%+-]{1,2})([a-z0-9._%+-]*)(@[a-z0-9.-]+\.[a-z]{2,})\b|||KEEP_EMAIL"/>
-    <property name="MASK_PHONE"
+    <property scope="context" name="MASK_PHONE"
               value="(?&lt;!\d)(\+?)(\d{3})\d{2,9}(\d{3})(?!\d)|||KEEP_LAST_3"/>
-    <property name="MASK_OTP"
+    <property scope="context" name="MASK_OTP"
               value="(?&lt;!\d)\d{6}(?!\d)|||******"/>
     <conversionRule conversionWord="mask"
                     class="com.shiro.flashsale.logging.PiiMaskingConverter"/>
