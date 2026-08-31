@@ -7,12 +7,6 @@ import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-/**
- * Customer profile belonging to an authenticated {@link User}.
- *
- * <p>{@code balance} is only ever moved by the conditional atomic UPDATEs in {@code
- * CustomerRepository}, never by dirty-checking, so concurrent purchases cannot overdraw it.
- */
 @Entity
 @Table(
     name = "customers",

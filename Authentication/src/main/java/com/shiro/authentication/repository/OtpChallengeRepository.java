@@ -14,7 +14,6 @@ public interface OtpChallengeRepository extends JpaRepository<OtpChallenge, UUID
   Optional<OtpChallenge> findTopByIdentifierAndPurposeAndConsumedFalseOrderByExpiresAtDesc(
       String identifier, OtpPurpose purpose);
 
-  /** Issuing a new code retires every older one, so only the latest code can ever be redeemed. */
   @Modifying(clearAutomatically = true)
   @Query(
       """

@@ -13,15 +13,14 @@ import org.slf4j.MDC;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-/** Logs API boundaries and the application functions reached by each request. */
 @Aspect
 @Component
 @Order(1)
-public class AuthRequestResponseLoggingAspect {
-  private static final Logger log = LoggerFactory.getLogger(AuthRequestResponseLoggingAspect.class);
+public class LoggingAspect {
+  private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
   private final ObjectMapper objectMapper;
 
-  public AuthRequestResponseLoggingAspect(ObjectMapper objectMapper) {
+  public LoggingAspect(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 

@@ -11,16 +11,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Keeps spent OTP rows from accumulating. Safe to run on every instance; the delete is idempotent.
- */
 @Component
 @ConditionalOnProperty(name = "app.otp-clear.enabled", havingValue = "true")
 public class ExpiredOtpCleanupWorker {
   private static final Logger log = LoggerFactory.getLogger(ExpiredOtpCleanupWorker.class);
 
   @Value("${app.otp-clear.retention}")
-  private static Duration RETENTION;
+  private Duration RETENTION;
 
   private final OtpChallengeRepository otps;
 
@@ -37,6 +34,8 @@ public class ExpiredOtpCleanupWorker {
       int deleted = otps.deleteExpiredBefore(Instant.now().minus(RETENTION));
       if (deleted > 0) {
         log.info("Purged {} expired OTP challenge(s)", deleted);
+      } else {
+        log.debug("Expired OTP cleanup completed; no expired challenges found");
       }
     } catch (RuntimeException exception) {
       log.error("Failed to purge expired OTP challenges", exception);

@@ -31,7 +31,7 @@
         <appender-ref ref="CONSOLE"/>
     </appender>
 
-    <logger name="com.shiro.authentication.logging.AuthRequestResponseLoggingAspect"
+    <logger name="com.shiro.authentication.logging.LoggingAspect"
             level="DEBUG"/>
 
     <root level="INFO">

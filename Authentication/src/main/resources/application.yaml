@@ -25,6 +25,9 @@ spring:
     # Docker exposes Kafka's external listener on 29092 for applications running on the host.
     # Containerized services override this with KAFKA_BOOTSTRAP_SERVERS=kafka:9092.
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: latest
+      group-id: ${KAFKA_MAINTENANCE_GROUP_ID:authentication-service}
   security:
     oauth2:
       resourceserver:
@@ -39,7 +42,9 @@ app:
     otp-max-attempts: 5
     registration-ttl: 15m
   kafka:
-    topic: ${KAFKA_NOTIFICATION_TOPIC:notification.requested}
+    topic:
+      notification: ${KAFKA_NOTIFICATION_TOPIC:notification.requested}
+      maintenance: ${KAFKA_MAINTENANCE_TOPIC:maintenance.config.reload}
   rate-limit:
     enabled: ${RATE_LIMIT_ENABLED:true}
     rules:
@@ -50,9 +55,9 @@ app:
       auth-register-identifier: { limit: 10, window: 1h }
       auth-otp-identifier: { limit: 25, window: 15m }
   otp-clear:
-    enabled: ${INVENTORY_SYNC_ENABLED:true}
-    interval: 60m
-    initial-delay: 10m
+    enabled: ${OTP_CLEAR_ENABLED:true}
+    interval: 1m
+    initial-delay: 1m
     retention: 1d
 
 management:

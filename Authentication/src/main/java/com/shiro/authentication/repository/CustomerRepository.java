@@ -12,7 +12,6 @@ import org.springframework.data.repository.query.Param;
 public interface CustomerRepository extends JpaRepository<Customer, UUID> {
   Optional<Customer> findByUserId(UUID userId);
 
-  /** Conditional debit: returns 0 instead of overdrawing when the balance is short. */
   @Modifying
   @Query(
       """

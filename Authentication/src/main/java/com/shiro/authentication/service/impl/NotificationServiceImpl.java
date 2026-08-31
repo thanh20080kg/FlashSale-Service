@@ -23,7 +23,7 @@ public class NotificationServiceImpl implements NotificationService {
   public NotificationServiceImpl(
       KafkaTemplate<String, String> kafkaTemplate,
       ObjectMapper objectMapper,
-      @Value("${app.kafka.topic:notification.requested}") String topic) {
+      @Value("${app.kafka.topic.notification:notification.requested}") String topic) {
     this.kafkaTemplate = kafkaTemplate;
     this.objectMapper = objectMapper;
     this.topic = topic;

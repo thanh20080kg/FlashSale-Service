@@ -2,7 +2,6 @@ package com.shiro.authentication.exception;
 
 import org.springframework.http.HttpStatus;
 
-/** Business failure that is safe to surface to the caller, carrying its own HTTP status. */
 public class ApiException extends RuntimeException {
   private final ErrorCode error;
 

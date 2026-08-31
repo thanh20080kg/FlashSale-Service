@@ -105,6 +105,7 @@ services:
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_NOTIFICATION_TOPIC: notification.requested
+      KAFKA_MAINTENANCE_TOPIC: maintenance.config.reload
       JWT_SECRET: 2d7d27dba2c321d04f8b8dbdcdd1f9ef57811db298bc36375f98a169aa102409
       APP_TIMEZONE: Asia/Ho_Chi_Minh
     ports:
@@ -135,6 +136,8 @@ services:
       MYSQL_PASSWORD: P@ssword
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_MAINTENANCE_TOPIC: maintenance.config.reload
       JWT_SECRET: 2d7d27dba2c321d04f8b8dbdcdd1f9ef57811db298bc36375f98a169aa102409
       APP_TIMEZONE: Asia/Ho_Chi_Minh
       APP_SEED_DEMO_USERS: "true"

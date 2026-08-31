@@ -9,7 +9,6 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-/** Every tunable knob of the service lives here so nothing is hard-coded in business code. */
 @ConfigurationProperties(prefix = "app")
 @Component
 @Getter
