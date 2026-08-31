@@ -16,7 +16,8 @@ public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
   @Modifying
   @Query(
       """
-      update Inventory i set i.availableQuantity = i.availableQuantity - 1
+      update Inventory i set i.availableQuantity = i.availableQuantity - 1,
+            i.reservedQuantity = i.reservedQuantity + 1
       where i.product.id = :productId and i.availableQuantity > 0
       """)
   int reserve(@Param("productId") UUID productId);

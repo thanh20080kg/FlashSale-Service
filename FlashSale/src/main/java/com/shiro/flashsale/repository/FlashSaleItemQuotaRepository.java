@@ -25,10 +25,13 @@ public interface FlashSaleItemQuotaRepository extends JpaRepository<FlashSaleIte
   @Modifying
   @Query(
       """
-      update FlashSaleItemQuota q set q.remainingQuantity = q.remainingQuantity - 1
+      update FlashSaleItemQuota q set q.remainingQuantity = q.remainingQuantity - :quota
       where q.flashSaleItemId = :itemId and q.saleDate = :saleDate and q.remainingQuantity > 0
       """)
-  int decrement(@Param("itemId") UUID itemId, @Param("saleDate") LocalDate saleDate);
+  int decrement(
+      @Param("itemId") UUID itemId,
+      @Param("quota") int quota,
+      @Param("saleDate") LocalDate saleDate);
 
   /** Compensating update used when a downstream step of the purchase fails outside the tx. */
   @Modifying

@@ -18,3 +18,4 @@ databaseChangeLog:
               CREATE INDEX idx_purchase_customer_created ON flash_sale_purchases(customer_id, created_at);
               CREATE INDEX idx_inventory_event_claim ON inventory_sync_events(status, available_at, created_at);
               CREATE INDEX idx_inventory_movement_product ON inventory_movements(product_id, created_at);
+              CREATE TABLE app_configuration (config_key varchar(190) not null primary key, config_value varchar(500) not null );

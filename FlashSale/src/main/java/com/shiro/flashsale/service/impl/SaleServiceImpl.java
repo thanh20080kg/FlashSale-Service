@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
+@AllArgsConstructor
 public class SaleServiceImpl implements SaleService {
   private static final Logger log = LoggerFactory.getLogger(SaleServiceImpl.class);
   private static final String LISTING_CACHE_KEY = "sale:current:";
@@ -42,27 +44,6 @@ public class SaleServiceImpl implements SaleService {
   private final StringRedisTemplate redis;
   private final ObjectMapper objectMapper;
   private final AppProperties properties;
-
-  public SaleServiceImpl(
-      FlashSaleItemRepository items,
-      FlashSaleItemQuotaRepository quotas,
-      PurchaseRepository purchases,
-      CustomerRepository customers,
-      FlashSaleQuotaService quotaService,
-      PurchaseExecutor executor,
-      StringRedisTemplate redis,
-      ObjectMapper objectMapper,
-      AppProperties properties) {
-    this.items = items;
-    this.quotas = quotas;
-    this.purchases = purchases;
-    this.customers = customers;
-    this.quotaService = quotaService;
-    this.executor = executor;
-    this.redis = redis;
-    this.objectMapper = objectMapper;
-    this.properties = properties;
-  }
 
   /**
    * Read path for the storefront. The result is shared by every caller in the same second, so it is

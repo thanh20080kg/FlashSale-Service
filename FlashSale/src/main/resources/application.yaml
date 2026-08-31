@@ -41,6 +41,11 @@ spring:
           max-active: ${REDIS_POOL_MAX_ACTIVE:64}
           max-idle: 16
           min-idle: 4
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: latest
+      group-id: ${KAFKA_MAINTENANCE_GROUP_ID:flashsale-maintenance-${HOSTNAME:local}}
   security:
     oauth2:
       resourceserver:
@@ -85,6 +90,9 @@ app:
     batch-size: 200
     max-attempts: 10
     retry-backoff: 5s
+  maintenance:
+    kafka-topic: ${KAFKA_MAINTENANCE_TOPIC:maintenance.config.reload}
+    kafka-group-id: ${KAFKA_MAINTENANCE_GROUP_ID:flashsale-maintenance-${HOSTNAME:local}}
 
 logging:
   level:

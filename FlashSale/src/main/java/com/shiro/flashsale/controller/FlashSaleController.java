@@ -10,16 +10,15 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/flash-sales")
-public class SaleController {
+public class FlashSaleController {
   private final SaleService service;
 
-  public SaleController(SaleService service) {
+  public FlashSaleController(SaleService service) {
     this.service = service;
   }
 
-  /** Public storefront: what is on sale right now, with today's remaining quota. */
-  @GetMapping("/current")
-  public List<SaleDtos.SaleItemResponse> current() {
+  @GetMapping("/current-flashSale")
+  public List<SaleDtos.SaleItemResponse> getCurrentFlashSaleItems() {
     return service.currentItems();
   }
 

@@ -17,23 +17,13 @@ import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * The one short transaction that makes a purchase happen.
- *
- * <p>Statement order is deliberate. Every step that can fail on <em>this</em> customer alone runs
- * first, and the two globally contended rows - product inventory and the item's daily quota - are
- * touched last, immediately before commit. Row locks on the hot rows are therefore held for the
- * shortest possible window, which is what lets many buyers queue on the same item without the
- * throughput collapsing.
- *
- * <p>Correctness never relies on that ordering, only performance: each contended update is a
- * conditional atomic UPDATE, and any failure throws, rolling the whole thing back.
- */
 @Service
+@AllArgsConstructor
 public class PurchaseExecutor {
   private final CustomerRepository customers;
   private final PurchaseRepository purchases;
@@ -41,21 +31,6 @@ public class PurchaseExecutor {
   private final FlashSaleItemQuotaRepository quotas;
   private final InventoryEventRepository events;
   private final EntityManager entityManager;
-
-  public PurchaseExecutor(
-      CustomerRepository customers,
-      PurchaseRepository purchases,
-      InventoryRepository inventory,
-      FlashSaleItemQuotaRepository quotas,
-      InventoryEventRepository events,
-      EntityManager entityManager) {
-    this.customers = customers;
-    this.purchases = purchases;
-    this.inventory = inventory;
-    this.quotas = quotas;
-    this.events = events;
-    this.entityManager = entityManager;
-  }
 
   @Transactional
   public SaleDtos.PurchaseResponse execute(UUID userId, FlashSaleItem item, LocalDate saleDate) {
@@ -70,10 +45,6 @@ public class PurchaseExecutor {
       throw ApiException.of(ErrorCode.DAILY_LIMIT_REACHED);
     }
 
-    if (customers.debit(customer.getId(), item.getAmount()) == 0) {
-      throw ApiException.of(ErrorCode.INSUFFICIENT_BALANCE);
-    }
-
     // The item was read outside this transaction; reference it by id rather than re-attaching it.
     FlashSaleItem itemRef = entityManager.getReference(FlashSaleItem.class, item.getId());
     Purchase purchase = new Purchase(customer, itemRef, item.getAmount(), saleDate, now);
@@ -84,22 +55,35 @@ public class PurchaseExecutor {
       throw ApiException.of(ErrorCode.DAILY_LIMIT_REACHED);
     }
 
-    // Outbox row, same transaction as the purchase: the event exists exactly when the sale does.
-    events.saveAndFlush(
-        new InventoryEvent(
-            "PURCHASE:" + purchase.getId(),
-            InventoryEventType.PURCHASE_RESERVED,
-            item.getProduct().getId(),
-            -1,
-            now));
-
     // --- contended rows, kept last ---
     if (inventory.reserve(item.getProduct().getId()) == 0) {
       throw ApiException.of(ErrorCode.OUT_OF_STOCK);
     }
-    if (quotas.decrement(item.getId(), saleDate) == 0) {
+    if (quotas.decrement(item.getId(), 1, saleDate) == 0) {
       throw ApiException.of(ErrorCode.SOLD_OUT);
     }
+
+    // Outbox row, same transaction as the purchase: the event exists exactly when the sale does.
+    events.saveAndFlush(
+        new InventoryEvent(
+            "PURCHASE:" + purchase.getId(),
+            InventoryEventType.ORDER_RESERVED,
+            item.getProduct().getId(),
+            -1,
+            now));
+
+    if (customers.debit(customer.getId(), item.getAmount()) == 0) {
+      throw ApiException.of(ErrorCode.INSUFFICIENT_BALANCE);
+    }
+
+    // Outbox row, same transaction as the purchase: the event exists exactly when the sale does.
+    events.saveAndFlush(
+        new InventoryEvent(
+            "PURCHASE:" + purchase.getId(),
+            InventoryEventType.ORDER_SOLD,
+            item.getProduct().getId(),
+            -1,
+            now));
 
     return new SaleDtos.PurchaseResponse(
         purchase.getId(),

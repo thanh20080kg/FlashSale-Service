@@ -1,12 +1,3 @@
-# Demo flash sale configuration.
-#
-# It lives in Liquibase rather than in Java so the requirement "all flash sale configuration is
-# managed in the database" holds literally: this file only bootstraps a first dataset, and
-# everything in it can be changed afterwards through /api/v1/admin without a redeploy.
-#
-# The "All Day Showcase" slot exists so `GET /api/v1/flash-sales/current` returns something no
-# matter what time a reviewer runs the project; the other slots are realistic windows, including
-# one that deliberately wraps past midnight.
 databaseChangeLog:
   - changeSet:
       id: 003-01-seed-products

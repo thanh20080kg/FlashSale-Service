@@ -29,6 +29,9 @@ public class Inventory {
   private long availableQuantity;
 
   @Column(nullable = false)
+  private long reservedQuantity;
+
+  @Column(nullable = false)
   private long soldQuantity;
 
   protected Inventory() {}

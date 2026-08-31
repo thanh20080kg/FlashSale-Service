@@ -15,33 +15,15 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Product/inventory synchronisation built on a transactional outbox.
- *
- * <p><b>Consistency.</b> Producers write their business change and the outbox row in the same
- * database transaction, so an event exists if and only if the change was committed - there is no
- * window where one is visible without the other.
- *
- * <p><b>No duplicate processing.</b> Three independent guards, any one of which is sufficient:
- *
- * <ol>
- *   <li>{@code uk_inventory_event_key} - the same logical change can only ever be enqueued once;
- *   <li>{@code FOR UPDATE SKIP LOCKED} - a claimed event is invisible to every other worker, and
- *       the claim plus the {@code PROCESSED} transition commit atomically;
- *   <li>{@code uk_inventory_movement_event} - applying the same event twice would violate the
- *       ledger's unique key.
- * </ol>
- *
- * <p><b>Multi-instance.</b> No leader election and no local state: every instance runs the same
- * loop and simply skips rows another instance already holds.
- */
 @Service
+@AllArgsConstructor
 public class InventorySyncServiceImpl implements InventorySyncService {
   private static final Logger log = LoggerFactory.getLogger(InventorySyncServiceImpl.class);
 
@@ -51,21 +33,6 @@ public class InventorySyncServiceImpl implements InventorySyncService {
   private final FlashSaleItemRepository items;
   private final FlashSaleItemQuotaRepository quotas;
   private final AppProperties properties;
-
-  public InventorySyncServiceImpl(
-      InventoryEventRepository events,
-      InventoryMovementRepository movements,
-      InventoryRepository inventory,
-      FlashSaleItemRepository items,
-      FlashSaleItemQuotaRepository quotas,
-      AppProperties properties) {
-    this.events = events;
-    this.movements = movements;
-    this.inventory = inventory;
-    this.items = items;
-    this.quotas = quotas;
-    this.properties = properties;
-  }
 
   @Override
   public void enqueue(
@@ -101,7 +68,7 @@ public class InventorySyncServiceImpl implements InventorySyncService {
 
   private void apply(InventoryEvent event, Instant now) {
     switch (event.getEventType()) {
-      case PURCHASE_RESERVED -> {
+      case ORDER_SOLD -> {
         // available_quantity was already decremented inside the purchase transaction (that is what
         // prevents overselling). The worker maintains the derived counters and the audit ledger.
         inventory.addSold(event.getProductId(), -event.getQuantityDelta());
