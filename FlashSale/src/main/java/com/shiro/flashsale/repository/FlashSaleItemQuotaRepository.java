@@ -14,6 +14,9 @@ public interface FlashSaleItemQuotaRepository extends JpaRepository<FlashSaleIte
 
   boolean existsByFlashSaleItemIdAndSaleDate(UUID flashSaleItemId, LocalDate saleDate);
 
+  java.util.Optional<FlashSaleItemQuota> findByFlashSaleItemIdAndSaleDate(
+      UUID flashSaleItemId, LocalDate saleDate);
+
   List<FlashSaleItemQuota> findByFlashSaleItemIdInAndSaleDate(
       Collection<UUID> flashSaleItemIds, LocalDate saleDate);
 

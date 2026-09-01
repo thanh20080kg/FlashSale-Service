@@ -34,8 +34,8 @@ public class NotificationConsumer {
   }
 
   @KafkaListener(
-      topics = "${app.kafka.topic:notification.requested}",
-      groupId = "${app.kafka.group-id:notification-service}")
+      topics = "${app.kafka.topic}",
+      groupId = "${app.kafka.group-id}")
   @Transactional(readOnly = true)
   public void consume(String payload) throws Exception {
     NotificationMessage message = objectMapper.readValue(payload, NotificationMessage.class);

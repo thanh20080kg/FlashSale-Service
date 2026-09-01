@@ -4,6 +4,7 @@ services:
     container_name: flashsale-mysql
     restart: unless-stopped
     environment:
+      TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       MYSQL_DATABASE: flashsale
       MYSQL_USER: flashsale_admin
       MYSQL_PASSWORD: P@ssword
@@ -12,6 +13,7 @@ services:
       NOTIFICATION_DB_PASSWORD: P@ssword
       FLASHSALE_DB_PASSWORD: P@ssword
       PAYMENT_DB_PASSWORD: P@ssword
+      WAREHOUSE_DB_PASSWORD: ${WAREHOUSE_DB_PASSWORD:-P@ssword}
     command: ["--default-time-zone=+07:00", "--max-connections=500"]
     ports:
       - "3306:3306"
@@ -39,11 +41,31 @@ services:
       timeout: 5s
       retries: 10
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: flashsale-rabbitmq
+    restart: unless-stopped
+    environment:
+      TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      RABBITMQ_DEFAULT_USER: flashsale
+      RABBITMQ_DEFAULT_PASS: flashsale
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   kafka:
     image: apache/kafka:3.8.1
     container_name: flashsale-kafka
     restart: unless-stopped
     environment:
+      TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
@@ -75,6 +97,7 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     ports:
@@ -93,7 +116,11 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
+      TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       SERVER_PORT: 8081
       MYSQL_SCHEMA: authentication
       MYSQL_HOST: mysql
@@ -127,7 +154,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
+      TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       MYSQL_SCHEMA: flashsale
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
@@ -141,6 +172,10 @@ services:
       JWT_SECRET: 2d7d27dba2c321d04f8b8dbdcdd1f9ef57811db298bc36375f98a169aa102409
       APP_TIMEZONE: Asia/Ho_Chi_Minh
       APP_SEED_DEMO_USERS: "true"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-flashsale}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-flashsale}
     ports:
       - "8080:8080"
     healthcheck:
@@ -165,6 +200,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       SERVER_PORT: 8082
       MYSQL_SCHEMA: notification
       MYSQL_HOST: mysql
@@ -193,6 +230,8 @@ services:
     container_name: payment
     restart: unless-stopped
     environment:
+      TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       MYSQL_SCHEMA: payment
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
@@ -206,7 +245,40 @@ services:
       timeout: 5s
       retries: 20
 
+  warehouse:
+    build:
+      context: ./Warehouse
+    image: warehouse-service:local
+    container_name: warehouse
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      SERVER_PORT: 8084
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: warehouse
+      MYSQL_USERNAME: warehouse_user
+      MYSQL_PASSWORD: ${WAREHOUSE_DB_PASSWORD:-P@ssword}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-flashsale}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-change-me-local-only}
+    ports:
+      - "8084:8084"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
 volumes:
   mysql_data:
   redis_data:
   kafka_data:
+  rabbitmq_data:

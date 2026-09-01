@@ -12,6 +12,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
+    properties:
+      hibernate:
+        type:
+          preferred_uuid_jdbc_type: CHAR
     open-in-view: false
   liquibase:
     enabled: true
@@ -22,8 +26,6 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
   kafka:
-    # Docker exposes Kafka's external listener on 29092 for applications running on the host.
-    # Containerized services override this with KAFKA_BOOTSTRAP_SERVERS=kafka:9092.
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     consumer:
       auto-offset-reset: latest

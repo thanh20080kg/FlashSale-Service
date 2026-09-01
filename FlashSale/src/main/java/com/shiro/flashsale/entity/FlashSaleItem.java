@@ -3,13 +3,11 @@ package com.shiro.flashsale.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * Configuration of one product inside one slot: price and the daily allowance.
- *
- * <p>The live counter is deliberately <em>not</em> here - it lives in {@link FlashSaleItemQuota},
- * keyed by day, because slots repeat daily.
- */
+@Getter
+@Setter
 @Entity
 @Table(
     name = "flash_sale_items",
@@ -21,6 +19,9 @@ public class FlashSaleItem {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
+
+  @Column(name = "owner_id")
+  private UUID ownerId;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "slot_id", nullable = false)
@@ -47,41 +48,5 @@ public class FlashSaleItem {
     this.product = product;
     this.amount = amount;
     this.quantity = quantity;
-  }
-
-  public UUID getId() {
-    return id;
-  }
-
-  public FlashSaleSlot getSlot() {
-    return slot;
-  }
-
-  public Product getProduct() {
-    return product;
-  }
-
-  public BigDecimal getAmount() {
-    return amount;
-  }
-
-  public void setAmount(BigDecimal amount) {
-    this.amount = amount;
-  }
-
-  public long getQuantity() {
-    return quantity;
-  }
-
-  public void setQuantity(long quantity) {
-    this.quantity = quantity;
-  }
-
-  public boolean isActive() {
-    return active;
-  }
-
-  public void setActive(boolean active) {
-    this.active = active;
   }
 }

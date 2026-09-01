@@ -1,5 +1,7 @@
 package com.shiro.flashsale.security;
 
+import com.shiro.flashsale.constants.RedisKeyConstants;
+import com.shiro.flashsale.service.RedisService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,7 +10,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -23,11 +24,11 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
   private static final String BEARER = "Bearer ";
 
   private final JwtDecoder jwtDecoder;
-  private final StringRedisTemplate redis;
+  private final RedisService redisService;
 
-  public TokenAuthenticationFilter(JwtDecoder jwtDecoder, StringRedisTemplate redis) {
+  public TokenAuthenticationFilter(JwtDecoder jwtDecoder, RedisService redisService) {
     this.jwtDecoder = jwtDecoder;
-    this.redis = redis;
+    this.redisService = redisService;
   }
 
   @Override
@@ -40,7 +41,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         Jwt jwt = jwtDecoder.decode(header.substring(BEARER.length()).trim());
         String tokenId = jwt.getId();
         String userId =
-            ObjectUtils.isEmpty(tokenId) ? null : redis.opsForValue().get("auth:token:" + tokenId);
+            ObjectUtils.isEmpty(tokenId)
+                ? null
+                : redisService.get(RedisKeyConstants.AUTH_TOKEN + tokenId);
         if (ObjectUtils.isNotEmpty(userId)) {
           List<GrantedAuthority> authorities = new ArrayList<>();
           String role = jwt.getClaimAsString("role");

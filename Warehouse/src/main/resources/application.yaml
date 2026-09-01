@@ -1,3 +1,34 @@
+server.port: ${SERVER_PORT:8084}
 spring:
   application:
-    name: Warehouse
+    name: warehouse
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:warehouse}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+    username: ${MYSQL_USERNAME:warehouse_user}
+    password: ${MYSQL_PASSWORD:P@ssword}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        type.preferred_uuid_jdbc_type: CHAR
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:flashsale}
+    password: ${RABBITMQ_PASSWORD:flashsale}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: latest
+      group-id: ${KAFKA_WAREHOUSE_STATUS_SYNC_GROUP_ID:warehouse-status-sync-${HOSTNAME:local}}
+app:
+  kafka-topic:
+    trigger-status-sync: ${KAFKA_WAREHOUSE_STATUS_SYNC_TOPIC:warehouse.purchase-status.sync}
+  rabbit-queue:
+    inventory-queue: ${WAREHOUSE_STATUS_SYNC_QUEUE:warehouse.inventory.commands}
+    status-sync-queue: ${WAREHOUSE_STATUS_SYNC_QUEUE:flashsale.purchase-status.sync}

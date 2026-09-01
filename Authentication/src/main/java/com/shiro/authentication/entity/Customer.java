@@ -4,9 +4,11 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.Getter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+@Getter
 @Entity
 @Table(
     name = "customers",
@@ -36,25 +38,5 @@ public class Customer {
     this.user = user;
     this.displayName = displayName;
     this.createdAt = createdAt;
-  }
-
-  public UUID getId() {
-    return id;
-  }
-
-  public User getUser() {
-    return user;
-  }
-
-  public String getDisplayName() {
-    return displayName;
-  }
-
-  public BigDecimal getBalance() {
-    return balance;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
   }
 }

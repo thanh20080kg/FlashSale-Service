@@ -58,10 +58,6 @@ public class ApiExceptionHandler {
     return response(ErrorCode.FORBIDDEN, ErrorCode.FORBIDDEN.defaultMessage(), req);
   }
 
-  /**
-   * A unique-key violation reaching this point means two concurrent requests raced on the same
-   * natural key. It is a conflict, not a server fault, and the detail never leaves the log.
-   */
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<Map<String, Object>> conflict(
       DataIntegrityViolationException ex, HttpServletRequest req) {
@@ -78,7 +74,6 @@ public class ApiExceptionHandler {
     return response(ErrorCode.INVALID_REQUEST, "No handler for this request", req);
   }
 
-  /** Last resort: log the cause, return an opaque body so internals never leak. */
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String, Object>> unexpected(Exception ex, HttpServletRequest req) {
     log.error("Unhandled error on {} {}", req.getMethod(), req.getRequestURI(), ex);

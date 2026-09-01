@@ -24,8 +24,8 @@ spring:
         jdbc:
           batch_size: 50
           time_zone: ${APP_TIMEZONE:Asia/Ho_Chi_Minh}
-        order_inserts: true
-        order_updates: true
+        type:
+          preferred_uuid_jdbc_type: CHAR
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
@@ -45,7 +45,12 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     consumer:
       auto-offset-reset: latest
-      group-id: ${KAFKA_MAINTENANCE_GROUP_ID:flashsale-maintenance-${HOSTNAME:local}}
+      group-id: ${KAFKA_MAINTENANCE_GROUP_ID:flashsale-service}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:flashsale}
+    password: ${RABBITMQ_PASSWORD:flashsale}
   security:
     oauth2:
       resourceserver:
@@ -73,26 +78,22 @@ management:
         enabled: true
 
 app:
-  # Every date/time decision (slot window, "one purchase per day") resolves against
-  # this zone, never the JVM default, so all instances agree regardless of host TZ.
   timezone: ${APP_TIMEZONE:Asia/Ho_Chi_Minh}
-  insecure-default-jwt-secret: local-dev-secret-please-change-me-32bytes
   auth:
     token-ttl: 24h
     otp-ttl: 5m
     otp-max-attempts: 5
     registration-ttl: 1h
   sale:
+    limit-daily-purchase: ${SALE_LIMIT_DAILY_PURCHASE:1000}
     current-items-cache-ttl: ${SALE_LISTING_CACHE_TTL:2s}
-  inventory-sync:
-    enabled: ${INVENTORY_SYNC_ENABLED:true}
-    interval: 1s
-    batch-size: 200
-    max-attempts: 10
-    retry-backoff: 5s
-  maintenance:
-    kafka-topic: ${KAFKA_MAINTENANCE_TOPIC:maintenance.config.reload}
-    kafka-group-id: ${KAFKA_MAINTENANCE_GROUP_ID:flashsale-maintenance-${HOSTNAME:local}}
+  warehouse:
+    queue: ${WAREHOUSE_INVENTORY_QUEUE:warehouse.inventory.commands}
+    status-sync-queue: ${WAREHOUSE_STATUS_SYNC_QUEUE:flashsale.purchase-status.sync}
+    timeout: ${WAREHOUSE_TIMEOUT:15s}
+  kafka-topic:
+    trigger-reload : ${KAFKA_RELOAD_CONFIG_TOPIC:maintenance.config.reload}
+    quota-reload-topic: ${KAFKA_QUOTA_RELOAD_TOPIC:flashsale.quota.reload}
 
 logging:
   level:

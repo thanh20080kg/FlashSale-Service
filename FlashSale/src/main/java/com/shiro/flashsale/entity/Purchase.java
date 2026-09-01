@@ -1,18 +1,14 @@
 package com.shiro.flashsale.entity;
 
+import com.shiro.flashsale.constants.PurchaseStatus;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import lombok.Getter;
 
-/**
- * One successful flash sale purchase.
- *
- * <p>The unique key on {@code (customer_id, purchase_date)} is what actually enforces "one purchase
- * per user per day" - the pre-check in the service is only a fast path, the index is the guarantee
- * that survives concurrent requests hitting different instances.
- */
+@Getter
 @Entity
 @Table(
     name = "flash_sale_purchases",
@@ -25,9 +21,8 @@ public class Purchase {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "customer_id", nullable = false)
-  private Customer customer;
+  @Column(name = "customer_id", nullable = false)
+  private UUID customerId;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "flash_sale_item_id", nullable = false)
@@ -42,38 +37,19 @@ public class Purchase {
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private PurchaseStatus status;
+
   protected Purchase() {}
 
   public Purchase(
-      Customer customer, FlashSaleItem item, BigDecimal amount, LocalDate date, Instant createdAt) {
-    this.customer = customer;
+      UUID customerId, FlashSaleItem item, BigDecimal amount, LocalDate date, Instant createdAt) {
+    this.customerId = customerId;
     this.item = item;
     this.amount = amount;
     this.purchaseDate = date;
     this.createdAt = createdAt;
-  }
-
-  public UUID getId() {
-    return id;
-  }
-
-  public Customer getCustomer() {
-    return customer;
-  }
-
-  public FlashSaleItem getItem() {
-    return item;
-  }
-
-  public BigDecimal getAmount() {
-    return amount;
-  }
-
-  public LocalDate getPurchaseDate() {
-    return purchaseDate;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
+    this.status = PurchaseStatus.PENDING;
   }
 }

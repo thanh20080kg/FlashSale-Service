@@ -52,11 +52,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
         .orElseGet(() -> null);
   }
 
-  /**
-   * Behind a load balancer the socket address is the proxy, so the first hop of X-Forwarded-For is
-   * used when present. Trust it only because the service is expected to sit behind an ingress that
-   * rewrites the header.
-   */
   private static String clientIp(HttpServletRequest request) {
     String forwarded = request.getHeader("X-Forwarded-For");
     if (ObjectUtils.isNotEmpty(forwarded) && !forwarded.isBlank()) {

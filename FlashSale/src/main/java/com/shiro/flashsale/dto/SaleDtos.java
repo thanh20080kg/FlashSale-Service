@@ -32,6 +32,7 @@ public final class SaleDtos {
       String sku,
       BigDecimal amount,
       LocalDate purchaseDate,
+      String status,
       String message) {}
 
   public record PurchaseHistoryResponse(

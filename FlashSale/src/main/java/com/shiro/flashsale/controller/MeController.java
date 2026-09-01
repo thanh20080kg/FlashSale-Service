@@ -16,11 +16,6 @@ public class MeController {
     this.service = service;
   }
 
-  @GetMapping("/balance")
-  public SaleDtos.BalanceResponse balance(Authentication authentication) {
-    return service.balance(CurrentUser.id(authentication));
-  }
-
   @GetMapping("/purchases")
   public List<SaleDtos.PurchaseHistoryResponse> purchases(
       Authentication authentication, @RequestParam(defaultValue = "20") int limit) {

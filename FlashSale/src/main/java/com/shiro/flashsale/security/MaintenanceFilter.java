@@ -1,6 +1,6 @@
 package com.shiro.flashsale.security;
 
-import com.shiro.flashsale.service.MaintenanceConfigService;
+import com.shiro.flashsale.service.MaintenanceService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -57,10 +57,10 @@ public class MaintenanceFilter extends OncePerRequestFilter {
               "/api/v1/admin/inventory-sync/status",
               "MAINTENANCE_ADMIN_INVENTORY_SYNC_STATUS"));
 
-  private final MaintenanceConfigService maintenanceConfig;
+  private final MaintenanceService maintenanceConfig;
   private final ObjectMapper objectMapper;
 
-  public MaintenanceFilter(MaintenanceConfigService maintenanceConfig, ObjectMapper objectMapper) {
+  public MaintenanceFilter(MaintenanceService maintenanceConfig, ObjectMapper objectMapper) {
     this.maintenanceConfig = maintenanceConfig;
     this.objectMapper = objectMapper;
   }

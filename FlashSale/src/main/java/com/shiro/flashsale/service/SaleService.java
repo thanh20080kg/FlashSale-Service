@@ -11,5 +11,5 @@ public interface SaleService {
 
   List<SaleDtos.PurchaseHistoryResponse> purchaseHistory(UUID userId, int limit);
 
-  SaleDtos.BalanceResponse balance(UUID userId);
+  void reloadQuota();
 }

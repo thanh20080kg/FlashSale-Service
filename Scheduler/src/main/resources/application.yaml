@@ -1,0 +1,15 @@
+server.port: ${SERVER_PORT:8085}
+spring:
+  application:
+    name: Scheduler
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+
+app:
+  timezone: ${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+  kafka-topic:
+    quota-reload-topic: ${KAFKA_QUOTA_RELOAD_TOPIC:flashsale.quota.reload}
+    trigger-status-sync: ${KAFKA_WAREHOUSE_STATUS_SYNC_TOPIC:warehouse.purchase-status.sync}
+  scheduler:
+    quota-reload-cron: ${SCHEDULER_QUOTA_RELOAD_CRON:0 * * * * *}
+    status-sync-cron: ${SCHEDULER_STATUS_SYNC_CRON:0 * * * * *}

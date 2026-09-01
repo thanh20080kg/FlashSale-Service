@@ -1,6 +1,6 @@
 package com.shiro.authentication.security;
 
-import com.shiro.authentication.service.MaintenanceConfigService;
+import com.shiro.authentication.service.MaintenanceService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,10 +31,10 @@ public class MaintenanceFilter extends OncePerRequestFilter {
           new Route("POST", "/api/v1/auth/login", "MAINTENANCE_AUTH_LOGIN"),
           new Route("POST", "/api/v1/auth/logout", "MAINTENANCE_AUTH_LOGOUT"));
 
-  private final MaintenanceConfigService maintenanceConfig;
+  private final MaintenanceService maintenanceConfig;
   private final ObjectMapper objectMapper;
 
-  public MaintenanceFilter(MaintenanceConfigService maintenanceConfig, ObjectMapper objectMapper) {
+  public MaintenanceFilter(MaintenanceService maintenanceConfig, ObjectMapper objectMapper) {
     this.maintenanceConfig = maintenanceConfig;
     this.objectMapper = objectMapper;
   }

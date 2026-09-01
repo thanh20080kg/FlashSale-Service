@@ -13,12 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-/**
- * Fixed-window counter backed by Redis.
- *
- * <p>Redis rather than an in-process cache on purpose: the limit has to hold across the whole
- * fleet, otherwise adding instances would silently multiply what an attacker is allowed to do.
- */
 @Component
 public class RateLimiter {
   private static final Logger log = LoggerFactory.getLogger(RateLimiter.class);
@@ -32,7 +26,6 @@ public class RateLimiter {
     this.properties = properties;
   }
 
-  /** Subjects can be emails or phone numbers - never store them in Redis in the clear. */
   private static String hash(String subject) {
     try {
       byte[] digest =
@@ -43,9 +36,6 @@ public class RateLimiter {
     }
   }
 
-  /**
-   * Consumes one token of {@code ruleName} for {@code subject}, throwing when the rule is spent.
-   */
   public void consume(String ruleName, String subject) {
     if (!properties.getRateLimit().isEnabled()) {
       return;

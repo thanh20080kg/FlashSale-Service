@@ -9,10 +9,10 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-@ConfigurationProperties(prefix = "app")
-@Component
 @Getter
 @Setter
+@Component
+@ConfigurationProperties(prefix = "app")
 public class AppProperties {
   private final Auth auth = new Auth();
   private final RateLimit rateLimit = new RateLimit();

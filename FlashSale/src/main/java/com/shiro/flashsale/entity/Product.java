@@ -2,7 +2,9 @@ package com.shiro.flashsale.entity;
 
 import jakarta.persistence.*;
 import java.util.UUID;
+import lombok.Getter;
 
+@Getter
 @Entity
 @Table(
     name = "products",
@@ -11,6 +13,9 @@ public class Product {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
+
+  @Column(name = "owner_id")
+  private UUID ownerId;
 
   @Column(nullable = false, length = 64)
   private String sku;
@@ -26,29 +31,5 @@ public class Product {
   public Product(String sku, String name) {
     this.sku = sku;
     this.name = name;
-  }
-
-  public UUID getId() {
-    return id;
-  }
-
-  public String getSku() {
-    return sku;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public boolean isActive() {
-    return active;
-  }
-
-  public void setActive(boolean active) {
-    this.active = active;
   }
 }

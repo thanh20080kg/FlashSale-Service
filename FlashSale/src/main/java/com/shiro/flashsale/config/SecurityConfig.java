@@ -37,13 +37,10 @@ public class SecurityConfig {
       @Qualifier("corsConfigurationSource") CorsConfigurationSource cors,
       SecurityErrorResponder errorResponder)
       throws Exception {
-    return http
-        // No cookies, no CSRF surface; the API is token-only.
-        .csrf(AbstractHttpConfigurer::disable)
+    return http.csrf(AbstractHttpConfigurer::disable)
         .cors(c -> c.configurationSource(cors))
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)
-        // Nothing is kept in an HttpSession, which is what lets any instance serve any request.
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .headers(
             h ->
@@ -55,16 +52,10 @@ public class SecurityConfig {
                 auth.requestMatchers(
                         "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/actuator/**")
                     .permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/flash-sales/current")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/flash-sales/current-flashSale")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/v1/flash-sales/purchase")
-                    .hasAuthority("PERM_SALE_PURCHASE")
-                    .requestMatchers("/api/v1/me/**")
                     .authenticated()
-                    .requestMatchers("/api/v1/admin/customers/**")
-                    .hasAuthority("PERM_USER_MANAGE")
-                    .requestMatchers("/api/v1/admin/**")
-                    .hasAuthority("PERM_SALE_MANAGE")
                     .anyRequest()
                     .authenticated())
         .exceptionHandling(
