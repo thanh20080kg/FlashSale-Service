@@ -21,19 +21,24 @@ public class TriggerScheduler {
   @Value("${app.kafka-topic.trigger-status-sync}")
   private String statusSyncTopic;
 
-  @Scheduled(
-      cron = "${app.scheduler.quota-reload-cron}",
-      zone = "${app.timezone}")
+  @Value("${app.kafka-topic.payment-status-sync}")
+  private String paymentStatusSyncTopic;
+
+  @Scheduled(cron = "${app.scheduler.quota-reload-cron}", zone = "${app.timezone}")
   public void reloadQuotaTrigger() {
     log.info("Publishing quota reload trigger");
     kafkaTriggerProducer.send(quotaReloadTopic);
   }
 
-  @Scheduled(
-      cron = "${app.scheduler.status-sync-cron}",
-      zone = "${app.timezone}")
+  @Scheduled(cron = "${app.scheduler.status-sync-cron}", zone = "${app.timezone}")
   public void onSyncTrigger() {
     log.info("Publishing purchase status sync trigger");
     kafkaTriggerProducer.send(statusSyncTopic);
+  }
+
+  @Scheduled(cron = "${app.scheduler.payment-status-sync-cron}", zone = "${app.timezone}")
+  public void onPaymentStatusSyncTrigger() {
+    log.info("Publishing payment status sync trigger");
+    kafkaTriggerProducer.send(paymentStatusSyncTopic);
   }
 }

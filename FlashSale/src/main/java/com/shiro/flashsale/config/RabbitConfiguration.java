@@ -24,6 +24,11 @@ public class RabbitConfiguration {
   }
 
   @Bean
+  Queue paymentCommandQueue(AppProperties properties) {
+    return QueueBuilder.durable(properties.getPayment().getQueue()).build();
+  }
+
+  @Bean
   MessageConverter stringMessageConverter() {
     return new SimpleMessageConverter();
   }
@@ -33,7 +38,10 @@ public class RabbitConfiguration {
       ConnectionFactory factory, MessageConverter converter, AppProperties properties) {
     RabbitTemplate template = new RabbitTemplate(factory);
     template.setMessageConverter(converter);
-    template.setReplyTimeout(properties.getWarehouse().getTimeout().toMillis());
+    template.setReplyTimeout(
+        Math.max(
+            properties.getWarehouse().getTimeout().toMillis(),
+            properties.getPayment().getTimeout().toMillis()));
     return template;
   }
 }

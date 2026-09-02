@@ -91,9 +91,14 @@ app:
     queue: ${WAREHOUSE_INVENTORY_QUEUE:warehouse.inventory.commands}
     status-sync-queue: ${WAREHOUSE_STATUS_SYNC_QUEUE:flashsale.purchase-status.sync}
     timeout: ${WAREHOUSE_TIMEOUT:15s}
+  payment:
+    queue: ${PAYMENT_COMMAND_QUEUE:payment.commands}
+    timeout: ${PAYMENT_TIMEOUT:15s}
+    sync-batch-size: ${PAYMENT_SYNC_BATCH_SIZE:100}
   kafka-topic:
-    trigger-reload : ${KAFKA_RELOAD_CONFIG_TOPIC:maintenance.config.reload}
+    trigger-reload: ${KAFKA_RELOAD_CONFIG_TOPIC:maintenance.config.reload}
     quota-reload-topic: ${KAFKA_QUOTA_RELOAD_TOPIC:flashsale.quota.reload}
+    payment-status-sync: ${KAFKA_PAYMENT_STATUS_SYNC_TOPIC:payment.status.sync}
 
 logging:
   level:

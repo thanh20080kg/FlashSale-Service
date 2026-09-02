@@ -30,12 +30,18 @@ public class LoggingAspect {
     String operation = operation(joinPoint);
     log.info(
         "HTTP_REQUEST requestId={} threadId={} operation={} body={}",
-        context.requestId(), context.threadId(), operation, json(joinPoint.getArgs()));
+        context.requestId(),
+        context.threadId(),
+        operation,
+        json(joinPoint.getArgs()));
     try {
       Object response = joinPoint.proceed();
       log.info(
           "HTTP_RESPONSE requestId={} threadId={} operation={} body={}",
-          context.requestId(), context.threadId(), operation, json(response));
+          context.requestId(),
+          context.threadId(),
+          operation,
+          json(response));
       return response;
     } finally {
       endTrace(context);

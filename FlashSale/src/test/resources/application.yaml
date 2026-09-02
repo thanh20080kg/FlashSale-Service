@@ -1,4 +1,13 @@
 spring:
+  kafka:
+    consumer:
+      group-id: flashsale-test
+    listener:
+      auto-startup: false
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false
   security:
     oauth2:
       resourceserver:
@@ -24,6 +33,18 @@ spring:
 
 app:
   timezone: Asia/Ho_Chi_Minh
+  payment:
+    queue: payment.commands.test
+    timeout: 1s
+    sync-batch-size: 10
+  kafka-topic:
+    payment-status-sync: payment.status.sync.test
+    trigger-reload: maintenance.config.reload.test
+    quota-reload-topic: flashsale.quota.reload.test
+  warehouse:
+    queue: warehouse.inventory.commands.test
+    status-sync-queue: flashsale.purchase-status.sync.test
+    timeout: 1s
   seed:
     demo-users: false
   inventory-sync:

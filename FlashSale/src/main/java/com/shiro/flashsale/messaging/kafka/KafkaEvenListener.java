@@ -1,6 +1,7 @@
 package com.shiro.flashsale.messaging.kafka;
 
 import com.shiro.flashsale.service.MaintenanceService;
+import com.shiro.flashsale.service.PaymentStatusSyncService;
 import com.shiro.flashsale.service.SaleService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ public class KafkaEvenListener {
   private static final Logger log = LoggerFactory.getLogger(KafkaEvenListener.class);
   private final MaintenanceService maintenanceService;
   private final SaleService saleService;
+  private final PaymentStatusSyncService paymentStatusSyncService;
 
   @EventListener(ApplicationReadyEvent.class)
   @KafkaListener(topics = "${app.kafka-topic.quota-reload-topic}")
@@ -30,5 +32,11 @@ public class KafkaEvenListener {
     log.info("Received maintenance configuration reload trigger");
     maintenanceService.reload();
     log.info("Maintenance configuration reloaded successfully");
+  }
+
+  @KafkaListener(topics = "${app.kafka-topic.payment-status-sync}")
+  public void onPaymentStatusSyncTrigger() {
+    log.info("Received payment status sync trigger");
+    paymentStatusSyncService.syncPending();
   }
 }

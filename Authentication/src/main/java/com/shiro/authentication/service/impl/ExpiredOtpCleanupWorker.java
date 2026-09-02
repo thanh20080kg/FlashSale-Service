@@ -15,11 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(name = "app.otp-clear.enabled", havingValue = "true")
 public class ExpiredOtpCleanupWorker {
   private static final Logger log = LoggerFactory.getLogger(ExpiredOtpCleanupWorker.class);
+  private final OtpChallengeRepository otps;
 
   @Value("${app.otp-clear.retention}")
   private Duration RETENTION;
-
-  private final OtpChallengeRepository otps;
 
   public ExpiredOtpCleanupWorker(OtpChallengeRepository otps) {
     this.otps = otps;

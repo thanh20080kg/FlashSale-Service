@@ -14,12 +14,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class MaintenanceServiceImpl implements MaintenanceService {
   private static final String ALL_APIS_KEY = "MAINTENANCE_ALL";
-  private volatile Map<String, String> configurations = Map.of();
-
   private final AppConfigurationRepository configurationsRepository;
+  private volatile Map<String, String> configurations = Map.of();
 
   public MaintenanceServiceImpl(AppConfigurationRepository configurationsRepository) {
     this.configurationsRepository = configurationsRepository;
+  }
+
+  private static boolean isOn(String value) {
+    return Boolean.parseBoolean(value);
   }
 
   @EventListener(ApplicationReadyEvent.class)
@@ -42,9 +45,5 @@ public class MaintenanceServiceImpl implements MaintenanceService {
       return true;
     }
     return ObjectUtils.isNotEmpty(configKey) && isOn(configurations.get(configKey));
-  }
-
-  private static boolean isOn(String value) {
-    return Boolean.parseBoolean(value);
   }
 }

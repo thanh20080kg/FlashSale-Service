@@ -15,6 +15,9 @@ public interface InventoryReservationRepository extends JpaRepository<InventoryR
   List<InventoryReservation> findByStatus(String status);
 
   @Modifying
-  @Query("UPDATE InventoryReservation r SET r.status = :status WHERE r.reservationKey = :key AND r.status = 'RESERVED'")
-  int updateReservedStatus(@Param("key") UUID key, @Param("status") String status);
+  @Query(
+      value =
+          "UPDATE inventory_reservations SET status = :status WHERE reservation_key = :key AND status = 'RESERVED'",
+      nativeQuery = true)
+  int updateReservedStatus(@Param("key") String key, @Param("status") String status);
 }

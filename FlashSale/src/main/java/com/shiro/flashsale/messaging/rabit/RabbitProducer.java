@@ -45,7 +45,7 @@ public class RabbitProducer {
         }
         throw new RabbitProducerException("RabbitMQ returned no response");
       } catch (Exception exception) {
-          lastFailure = exception;
+        lastFailure = exception;
         if (attempt < maxAttempts) {
           try {
             Thread.sleep(100L * attempt);

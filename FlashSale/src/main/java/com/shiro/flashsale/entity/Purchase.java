@@ -37,6 +37,12 @@ public class Purchase {
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
+
+  @Column(name = "payment_transaction_id")
+  private UUID paymentTransactionId;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
   private PurchaseStatus status;
@@ -50,6 +56,7 @@ public class Purchase {
     this.amount = amount;
     this.purchaseDate = date;
     this.createdAt = createdAt;
+    this.updatedAt = createdAt;
     this.status = PurchaseStatus.PENDING;
   }
 }

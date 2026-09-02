@@ -1,6 +1,35 @@
 spring:
   application:
     name: Payment
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_SCHEMA:payment}?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+    username: ${MYSQL_USERNAME:payment_user}
+    password: ${MYSQL_PASSWORD:P@ssword}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        type.preferred_uuid_jdbc_type: CHAR
+        jdbc.time_zone: ${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:flashsale}
+    password: ${RABBITMQ_PASSWORD:flashsale}
+
+app:
+  payment:
+    default-accounts:
+      payer-id: ${PAYMENT_DEFAULT_PAYER_ACCOUNT_ID:11111111-0000-0000-0000-000000000001}
+      payee-id: ${PAYMENT_DEFAULT_PAYEE_ACCOUNT_ID:11111111-0000-0000-0000-000000000002}
+  rabbit-queue:
+    payment-command: ${PAYMENT_COMMAND_QUEUE:payment.commands}
 
 server:
   port: ${SERVER_PORT:8083}

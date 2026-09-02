@@ -59,8 +59,4 @@ public class OtpChallenge {
     consumed = false;
     attempts = 0;
   }
-
-  public void registerFailedAttempt() {
-    attempts++;
-  }
 }

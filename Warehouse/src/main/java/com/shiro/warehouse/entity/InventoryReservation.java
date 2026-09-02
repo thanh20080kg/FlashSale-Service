@@ -45,12 +45,4 @@ public class InventoryReservation {
     this.status = OrderStatus.RESERVED.name();
     this.createdAt = Instant.now();
   }
-
-  public void release() {
-    status = OrderStatus.RELEASED.name();
-  }
-
-  public void sold() {
-    status = OrderStatus.SOLD.name();
-  }
 }

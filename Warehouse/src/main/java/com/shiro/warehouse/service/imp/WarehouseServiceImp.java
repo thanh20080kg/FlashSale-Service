@@ -5,6 +5,7 @@ import static com.shiro.warehouse.constants.OrderStatus.*;
 import com.shiro.warehouse.client.FlashSaleClient;
 import com.shiro.warehouse.constants.OrderStatus;
 import com.shiro.warehouse.constants.PurchaseStatus;
+import com.shiro.warehouse.constants.ServiceConstants;
 import com.shiro.warehouse.dto.PurchaseStatusSyncDtos;
 import com.shiro.warehouse.dto.WarehouseRequest;
 import com.shiro.warehouse.dto.WarehouseResponse;
@@ -42,7 +43,7 @@ public class WarehouseServiceImp implements WarehouseService {
     UUID key = command.reservationKey();
 
     if (quantity <= 0) {
-      return new WarehouseResponse(false, INVALID, "quantity must be greater than zero");
+      return new WarehouseResponse(false, INVALID, ServiceConstants.INVALID_QUANTITY_MESSAGE);
     }
     var existing = reservations.findByReservationKey(key);
     if (existing.isPresent()) {
@@ -66,7 +67,7 @@ public class WarehouseServiceImp implements WarehouseService {
       return new WarehouseResponse(false, OUT_OF_STOCK, OUT_OF_STOCK.defaultMessage);
     }
 
-    if (inventories.reserve(productId, quantity) == 0) {
+    if (inventories.reserve(productId.toString(), quantity) == 0) {
       return new WarehouseResponse(false, OUT_OF_STOCK, OUT_OF_STOCK.defaultMessage);
     }
     reservations.save(new InventoryReservation(key, productId, quantity));
@@ -87,11 +88,12 @@ public class WarehouseServiceImp implements WarehouseService {
     if (SOLD.equals(orderStatus)) {
       return new WarehouseResponse(false, SOLD, SOLD.defaultMessage);
     }
-    if (reservations.updateReservedStatus(key, RELEASED.name()) == 0) {
+    if (reservations.updateReservedStatus(key.toString(), RELEASED.name()) == 0) {
       return new WarehouseResponse(false, ALREADY_RELEASED, ALREADY_RELEASED.defaultMessage);
     }
-    if (inventories.release(reservation.getProductId(), reservation.getQuantity()) == 0) {
-      throw new IllegalStateException("Inventory was not found while releasing reservation");
+    if (inventories.release(reservation.getProductId().toString(), reservation.getQuantity())
+        == 0) {
+      throw new IllegalStateException(ServiceConstants.INVENTORY_NOT_FOUND_WHILE_RELEASING);
     }
     return new WarehouseResponse(true, RELEASED, RELEASED.defaultMessage);
   }
@@ -111,11 +113,11 @@ public class WarehouseServiceImp implements WarehouseService {
     if (!RESERVED.equals(orderStatus)) {
       return new WarehouseResponse(false, orderStatus, orderStatus.defaultMessage);
     }
-    if (reservations.updateReservedStatus(key, SOLD.name()) == 0) {
+    if (reservations.updateReservedStatus(key.toString(), SOLD.name()) == 0) {
       return new WarehouseResponse(false, ALREADY_SOLD, ALREADY_SOLD.defaultMessage);
     }
-    if (inventories.sold(reservation.getProductId(), reservation.getQuantity()) == 0) {
-      throw new IllegalStateException("Inventory was not found while confirming reservation");
+    if (inventories.sold(reservation.getProductId().toString(), reservation.getQuantity()) == 0) {
+      throw new IllegalStateException(ServiceConstants.INVENTORY_NOT_FOUND_WHILE_CONFIRMING);
     }
     return new WarehouseResponse(true, SOLD, SOLD.defaultMessage);
   }

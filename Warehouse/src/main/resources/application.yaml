@@ -25,7 +25,7 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     consumer:
       auto-offset-reset: latest
-      group-id: ${KAFKA_WAREHOUSE_STATUS_SYNC_GROUP_ID:warehouse-status-sync-${HOSTNAME:local}}
+      group-id: ${KAFKA_WAREHOUSE_STATUS_SYNC_GROUP_ID:warehouse-service}
 app:
   kafka-topic:
     trigger-status-sync: ${KAFKA_WAREHOUSE_STATUS_SYNC_TOPIC:warehouse.purchase-status.sync}

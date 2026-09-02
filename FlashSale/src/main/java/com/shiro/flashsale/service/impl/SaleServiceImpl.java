@@ -7,6 +7,7 @@ import com.shiro.flashsale.entity.FlashSaleItem;
 import com.shiro.flashsale.entity.FlashSaleItemQuota;
 import com.shiro.flashsale.exception.ApiException;
 import com.shiro.flashsale.exception.ErrorCode;
+import com.shiro.flashsale.exception.PurchaseResponseException;
 import com.shiro.flashsale.repository.FlashSaleItemQuotaRepository;
 import com.shiro.flashsale.repository.FlashSaleItemRepository;
 import com.shiro.flashsale.repository.PurchaseRepository;
@@ -73,7 +74,11 @@ public class SaleServiceImpl implements SaleService {
               .findActiveById(request.itemId(), today, now)
               .orElseThrow(() -> ApiException.of(ErrorCode.SALE_NOT_ACTIVE));
       return executor.execute(userId, item, today);
+    } catch (PurchaseResponseException responseException) {
+      return (SaleDtos.PurchaseResponse) responseException.getObject();
     } catch (RuntimeException failure) {
+      log.error(
+          "Purchase execution failed, userId={}, itemId={}", userId, request.itemId(), failure);
       rollbackDailyLimit(dailyLimitKey);
       refundQuota(itemQuotaKey);
       throw failure;
@@ -102,7 +107,6 @@ public class SaleServiceImpl implements SaleService {
                   String.valueOf(remaining),
                   ttlUntilNextMidnight(current.toInstant()));
             });
-    System.out.println("process time : " + ((new Date()).getTime() - currentDateTime.getTime()));
   }
 
   private void validatePrePurchase(String dailyLimitKey, String itemQuotaKey) {

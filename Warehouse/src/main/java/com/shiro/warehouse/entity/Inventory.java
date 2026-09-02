@@ -31,20 +31,4 @@ public class Inventory {
     this.productId = productId;
     this.availableQuantity = quantity;
   }
-
-  public void reserve() {
-    availableQuantity--;
-  }
-
-  public void release() {
-    availableQuantity++;
-  }
-
-  public void sell() {
-    soldQuantity++;
-  }
-
-  public void adjust(long delta) {
-    availableQuantity += delta;
-  }
 }

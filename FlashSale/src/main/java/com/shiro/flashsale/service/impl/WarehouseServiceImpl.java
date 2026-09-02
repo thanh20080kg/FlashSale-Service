@@ -10,12 +10,15 @@ import com.shiro.flashsale.exception.ErrorCode;
 import com.shiro.flashsale.service.WarehouseService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
 public class WarehouseServiceImpl implements WarehouseService {
+  private static final Logger log = LoggerFactory.getLogger(WarehouseServiceImpl.class);
   private final WarehouseClient warehouseClient;
   private final ObjectMapper objectMapper;
 
@@ -68,6 +71,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     } catch (ApiException exception) {
       throw exception;
     } catch (Exception exception) {
+      log.error("Warehouse communication failed, operation={}", request.operation(), exception);
       throw ApiException.of(ErrorCode.INTERNAL_ERROR);
     }
   }
@@ -78,6 +82,11 @@ public class WarehouseServiceImpl implements WarehouseService {
     } catch (ApiException exception) {
       throw exception;
     } catch (Exception exception) {
+      log.error(
+          "Warehouse communication failed, operation={}, retry={}",
+          request.operation(),
+          retry,
+          exception);
       throw ApiException.of(ErrorCode.INTERNAL_ERROR);
     }
   }

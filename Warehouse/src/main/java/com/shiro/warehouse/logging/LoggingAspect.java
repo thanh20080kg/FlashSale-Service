@@ -24,29 +24,10 @@ public class LoggingAspect {
     this.objectMapper = objectMapper;
   }
 
-  @Around("within(com.shiro.warehouse.controller..*)")
-  public Object logRequestResponse(ProceedingJoinPoint joinPoint) throws Throwable {
-    RequestContext context = beginTrace();
-    String operation = operation(joinPoint);
-    log.info(
-        "HTTP_REQUEST requestId={} threadId={} operation={} body={}",
-        context.requestId(), context.threadId(), operation, json(joinPoint.getArgs()));
-    try {
-      Object response = joinPoint.proceed();
-      log.info(
-          "HTTP_RESPONSE requestId={} threadId={} operation={} body={}",
-          context.requestId(), context.threadId(), operation, json(response));
-      return response;
-    } finally {
-      endTrace(context);
-    }
-  }
-
   @Around(
       "execution(public * com.shiro.warehouse..*(..))"
           + " && !within(com.shiro.warehouse.config..*)"
-          + " && !within(com.shiro.warehouse.logging..*)"
-          + " && !within(com.shiro.warehouse.controller..*)")
+          + " && !within(com.shiro.warehouse.logging..*)")
   public Object logFunctionTrace(ProceedingJoinPoint joinPoint) throws Throwable {
     RequestContext context = beginTrace();
     log.debug("FUNCTION_TRACE operation={}", operation(joinPoint));

@@ -27,6 +27,7 @@ public enum ErrorCode {
   OUT_OF_STOCK(HttpStatus.CONFLICT, "Product inventory is sold out"),
   INSUFFICIENT_BALANCE(HttpStatus.PAYMENT_REQUIRED, "Insufficient balance"),
   DAILY_LIMIT_REACHED(HttpStatus.CONFLICT, "Only one flash sale purchase is allowed per day"),
+  PAYMENT_FAILED(HttpStatus.BAD_REQUEST, "Payment failed"),
 
   // --- admin / catalogue ---
   PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "Product not found"),

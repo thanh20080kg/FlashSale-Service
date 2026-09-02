@@ -14,13 +14,14 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
 
   @Modifying
   @Query(
-      """
-      update Customer c set c.balance = c.balance - :amount
-      where c.id = :id and c.balance >= :amount
-      """)
-  int debit(@Param("id") UUID id, @Param("amount") BigDecimal amount);
+      value =
+          "UPDATE customers SET balance = balance - :amount WHERE id = :id AND balance >= :amount",
+      nativeQuery = true)
+  int debit(@Param("id") String id, @Param("amount") BigDecimal amount);
 
   @Modifying
-  @Query("update Customer c set c.balance = c.balance + :amount where c.id = :id")
-  int credit(@Param("id") UUID id, @Param("amount") BigDecimal amount);
+  @Query(
+      value = "UPDATE customers SET balance = balance + :amount WHERE id = :id",
+      nativeQuery = true)
+  int credit(@Param("id") String id, @Param("amount") BigDecimal amount);
 }

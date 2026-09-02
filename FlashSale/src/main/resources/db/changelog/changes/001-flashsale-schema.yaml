@@ -8,10 +8,11 @@ databaseChangeLog:
               CREATE TABLE products (id VARCHAR(36) NOT NULL PRIMARY KEY, owner_id VARCHAR(36) NULL, sku VARCHAR(64) NOT NULL UNIQUE, name VARCHAR(200) NOT NULL, active BOOLEAN NOT NULL);
               CREATE TABLE flash_sale_slots (id VARCHAR(36) NOT NULL PRIMARY KEY, owner_id VARCHAR(36) NULL, name VARCHAR(100) NOT NULL, start_time TIME NOT NULL, end_time TIME NOT NULL, sale_date DATE NULL, active BOOLEAN NOT NULL);
               CREATE TABLE flash_sale_items (id VARCHAR(36) NOT NULL PRIMARY KEY, owner_id VARCHAR(36) NULL, slot_id VARCHAR(36) NOT NULL, product_id VARCHAR(36) NOT NULL, amount DECIMAL(19,2) NOT NULL, quantity BIGINT NOT NULL, active BOOLEAN NOT NULL, CONSTRAINT uk_slot_product UNIQUE (slot_id, product_id), CONSTRAINT fk_flash_sale_item_slot FOREIGN KEY (slot_id) REFERENCES flash_sale_slots(id), CONSTRAINT fk_flash_sale_item_product FOREIGN KEY (product_id) REFERENCES products(id));
-              CREATE TABLE flash_sale_purchases (id VARCHAR(36) NOT NULL PRIMARY KEY, customer_id VARCHAR(36) NOT NULL, flash_sale_item_id VARCHAR(36) NOT NULL, amount DECIMAL(19,2) NOT NULL, status VARCHAR(20) DEFAULT 'PENDING', purchase_date DATE NOT NULL, created_at DATETIME NOT NULL, CONSTRAINT uk_customer_purchase_day UNIQUE (customer_id, purchase_date), CONSTRAINT fk_purchase_flash_sale_item FOREIGN KEY (flash_sale_item_id) REFERENCES flash_sale_items(id));
+              CREATE TABLE flash_sale_purchases (id VARCHAR(36) NOT NULL PRIMARY KEY, customer_id VARCHAR(36) NOT NULL, flash_sale_item_id VARCHAR(36) NOT NULL, payment_transaction_id VARCHAR(36) NULL, amount DECIMAL(19,2) NOT NULL, status VARCHAR(20) DEFAULT 'PENDING', purchase_date DATE NOT NULL, created_at DATETIME NOT NULL, updated_at DATETIME(6) NOT NULL, CONSTRAINT fk_purchase_flash_sale_item FOREIGN KEY (flash_sale_item_id) REFERENCES flash_sale_items(id));
               CREATE TABLE flash_sale_item_quotas (id VARCHAR(36) NOT NULL PRIMARY KEY, flash_sale_item_id VARCHAR(36) NOT NULL, sale_date DATE NOT NULL, total_quantity BIGINT NOT NULL, remaining_quantity BIGINT NOT NULL, CONSTRAINT uk_item_sale_date UNIQUE (flash_sale_item_id, sale_date), CONSTRAINT fk_quota_flash_sale_item FOREIGN KEY (flash_sale_item_id) REFERENCES flash_sale_items(id));
               CREATE INDEX idx_slot_window ON flash_sale_slots(active, sale_date, start_time, end_time);
               CREATE INDEX idx_purchase_customer_created ON flash_sale_purchases(customer_id, created_at);
+              CREATE INDEX idx_purchase_status_created ON flash_sale_purchases(status, created_at);
               CREATE TABLE app_configuration (config_key varchar(190) not null primary key, config_value varchar(500) not null );
 
   - changeSet:
@@ -25,6 +26,7 @@ databaseChangeLog:
             separator: ","
             columns:
               - column: { name: id, type: STRING }
+              - column: { name: owner_id, type: STRING }
               - column: { name: sku, type: STRING }
               - column: { name: name, type: STRING }
               - column: { name: active, type: BOOLEAN }

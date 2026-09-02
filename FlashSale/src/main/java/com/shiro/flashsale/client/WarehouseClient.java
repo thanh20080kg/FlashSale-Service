@@ -16,7 +16,6 @@ public class WarehouseClient {
     return rabbitProducer.send(properties.getWarehouse().getQueue(), request);
   }
 
-
   public String send(WarehouseRequest request, int retry) throws Exception {
     return rabbitProducer.send(properties.getWarehouse().getQueue(), request, retry);
   }

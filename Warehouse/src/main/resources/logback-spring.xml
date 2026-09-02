@@ -1,14 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <property scope="context" name="MASK_EMAIL"
-              value="(?i)\b([a-z0-9._%+-]{1,2})([a-z0-9._%+-]*)(@[a-z0-9.-]+\.[a-z]{2,})\b|||KEEP_EMAIL"/>
-    <property scope="context" name="MASK_PHONE"
-              value="(?&lt;!\d)(\+?)(\d{3})\d{2,9}(\d{3})(?!\d)|||KEEP_LAST_3"/>
-    <property scope="context" name="MASK_OTP" value="(?&lt;!\d)\d{6}(?!\d)|||******"/>
-    <property scope="context" name="MASK_PASSWORD"
-              value="(&quot;password&quot;\s*:\s*&quot;)[^&quot;]*(&quot;)|||$1[REDACTED]$2"/>
-    <property scope="context" name="MASK_ACCESS_TOKEN"
-              value="(&quot;accessToken&quot;\s*:\s*&quot;)[^&quot;]*(&quot;)|||$1[REDACTED]$2"/>
     <conversionRule conversionWord="mask" class="com.shiro.warehouse.logging.PiiMaskingConverter"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">

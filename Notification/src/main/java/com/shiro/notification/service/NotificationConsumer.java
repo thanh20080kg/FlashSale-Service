@@ -1,6 +1,7 @@
 package com.shiro.notification.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shiro.notification.constants.NotificationConstants;
 import com.shiro.notification.constants.NotificationType;
 import com.shiro.notification.dto.NotificationMessage;
 import com.shiro.notification.entity.NotificationTemplate;
@@ -33,16 +34,14 @@ public class NotificationConsumer {
     this.redis = redis;
   }
 
-  @KafkaListener(
-      topics = "${app.kafka.topic}",
-      groupId = "${app.kafka.group-id}")
+  @KafkaListener(topics = "${app.kafka.topic}", groupId = "${app.kafka.group-id}")
   @Transactional(readOnly = true)
   public void consume(String payload) throws Exception {
     NotificationMessage message = objectMapper.readValue(payload, NotificationMessage.class);
     NotificationType type = NotificationType.valueOf(message.type());
     TemplateData template = template(message.templateCode());
     if (!type.equals(template.type())) {
-      throw new IllegalArgumentException("Notification type mismatch");
+      throw new IllegalArgumentException(NotificationConstants.TYPE_MISMATCH);
     }
     String content = render(template.content(), message.params());
     log.info(
@@ -58,13 +57,19 @@ public class NotificationConsumer {
     Map<Object, Object> cached = redis.opsForHash().entries(key);
     if (!cached.isEmpty()) {
       return new TemplateData(
-          String.valueOf(cached.get("content")),
-          NotificationType.valueOf(String.valueOf(cached.get("type"))));
+          String.valueOf(cached.get(NotificationConstants.CACHE_CONTENT)),
+          NotificationType.valueOf(String.valueOf(cached.get(NotificationConstants.CACHE_TYPE))));
     }
     NotificationTemplate value = templates.findByCode(code).orElseThrow();
     redis
         .opsForHash()
-        .putAll(key, Map.of("content", value.getContent(), "type", value.getType().name()));
+        .putAll(
+            key,
+            Map.of(
+                NotificationConstants.CACHE_CONTENT,
+                value.getContent(),
+                NotificationConstants.CACHE_TYPE,
+                value.getType().name()));
     redis.expire(key, java.time.Duration.ofDays(1));
     return new TemplateData(value.getContent(), value.getType());
   }
@@ -75,7 +80,7 @@ public class NotificationConsumer {
     while (matcher.find()) {
       String key = matcher.group(1);
       if (!params.containsKey(key)) {
-        throw new IllegalArgumentException("Missing template parameter: " + key);
+        throw new IllegalArgumentException(NotificationConstants.MISSING_TEMPLATE_PARAMETER + key);
       }
       matcher.appendReplacement(output, Matcher.quoteReplacement(String.valueOf(params.get(key))));
     }

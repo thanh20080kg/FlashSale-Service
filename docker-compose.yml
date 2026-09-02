@@ -13,15 +13,15 @@ services:
       NOTIFICATION_DB_PASSWORD: P@ssword
       FLASHSALE_DB_PASSWORD: P@ssword
       PAYMENT_DB_PASSWORD: P@ssword
-      WAREHOUSE_DB_PASSWORD: ${WAREHOUSE_DB_PASSWORD:-P@ssword}
-    command: ["--default-time-zone=+07:00", "--max-connections=500"]
+      WAREHOUSE_DB_PASSWORD: P@ssword
+    command: [ "--default-time-zone=+07:00", "--max-connections=500" ]
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -36,7 +36,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -55,7 +55,7 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -156,6 +156,10 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
+      payment:
+        condition: service_healthy
     environment:
       TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
@@ -176,10 +180,12 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-flashsale}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-flashsale}
+      PAYMENT_COMMAND_QUEUE: payment.commands
+      KAFKA_PAYMENT_STATUS_SYNC_TOPIC: payment.status.sync
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -229,6 +235,11 @@ services:
     image: payment-service:local
     container_name: payment
     restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
@@ -237,6 +248,11 @@ services:
       MYSQL_PORT: 3306
       MYSQL_USERNAME: payment_user
       MYSQL_PASSWORD: P@ssword
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-flashsale}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-flashsale}
+      PAYMENT_COMMAND_QUEUE: payment.commands
     ports:
       - "8083:8083"
     healthcheck:
@@ -265,17 +281,38 @@ services:
       MYSQL_DATABASE: warehouse
       MYSQL_USERNAME: warehouse_user
       MYSQL_PASSWORD: ${WAREHOUSE_DB_PASSWORD:-P@ssword}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_NOTIFICATION_GROUP_ID: warehouse-status
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-flashsale}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-change-me-local-only}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-flashsale}
     ports:
       - "8084:8084"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8084/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 20
+
+  scheduler:
+    build:
+      context: ./Scheduler
+    image: scheduler-service:local
+    container_name: scheduler
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      SERVER_PORT: 8086
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_PAYMENT_STATUS_SYNC_TOPIC: payment.status.sync
+      APP_TIMEZONE: Asia/Ho_Chi_Minh
+    ports:
+      - "8086:8086"
 
 volumes:
   mysql_data:

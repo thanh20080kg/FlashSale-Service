@@ -8,6 +8,7 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 import com.shiro.authentication.config.AppProperties;
 import com.shiro.authentication.constants.AuthChannel;
+import com.shiro.authentication.constants.Constant;
 import com.shiro.authentication.constants.NotificationTemplateCode;
 import com.shiro.authentication.constants.OtpPurpose;
 import com.shiro.authentication.dto.AuthResponse;
@@ -89,9 +90,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     Map<String, String> pending = new HashMap<>();
-    pending.put("identifier", identifier);
-    pending.put("channel", channel.name());
-    pending.put("passwordHash", encoder.encode(request.getPassword()));
+    pending.put(Constant.IDENTIFIER, identifier);
+    pending.put(Constant.CHANNEL, channel.name());
+    pending.put(Constant.PASSWORD_HASH, encoder.encode(request.getPassword()));
 
     String key = registrationKey(identifier);
     redis.opsForHash().putAll(key, pending);
@@ -111,7 +112,7 @@ public class AuthServiceImpl implements AuthService {
     if (pending.isEmpty()) {
       throw new AuthException(ErrorCode.REGISTRATION_EXPIRED);
     }
-    if (!ObjectUtils.equals(identifier, String.valueOf(pending.get("identifier")))) {
+    if (!ObjectUtils.equals(identifier, String.valueOf(pending.get(Constant.IDENTIFIER)))) {
       throw new AuthException(ErrorCode.REGISTRATION_INVALID);
     }
 
@@ -127,30 +128,31 @@ public class AuthServiceImpl implements AuthService {
         || !MessageDigest.isEqual(
             hashOtp(request.getOtp()).getBytes(StandardCharsets.UTF_8),
             challenge.getCodeHash().getBytes(StandardCharsets.UTF_8))) {
-      challenge.registerFailedAttempt();
-      otps.save(challenge);
+      otps.incrementAttempts(challenge.getId().toString());
       throw new OtpInvalidException();
     }
 
     AuthChannel channel;
     try {
-      channel = AuthChannel.valueOf(String.valueOf(pending.get("channel")));
+      channel = AuthChannel.valueOf(String.valueOf(pending.get(Constant.CHANNEL)));
     } catch (IllegalArgumentException | NullPointerException exception) {
       throw new AuthException(ErrorCode.REGISTRATION_INVALID);
     }
 
-    User user = new User(channel, identifier, String.valueOf(pending.get("passwordHash")));
+    User user = new User(channel, identifier, String.valueOf(pending.get(Constant.PASSWORD_HASH)));
     user.verify();
-    challenge.setConsumed(true);
     try {
-      otps.save(challenge);
+      if (otps.consume(challenge.getId().toString()) != 1) {
+        throw new AuthException(ErrorCode.OTP_INVALID);
+      }
       users.saveAndFlush(user);
     } catch (DataIntegrityViolationException concurrentVerification) {
       // Two verify calls raced; the unique index on identifier settled it.
       throw new AuthException(ErrorCode.IDENTIFIER_ALREADY_REGISTERED);
     }
     customers.save(
-        new Customer(user, String.valueOf(pending.getOrDefault("displayName", "")), Instant.now()));
+        new Customer(
+            user, String.valueOf(pending.getOrDefault(Constant.DISPLAY_NAME, "")), Instant.now()));
     redis.delete(registrationKey(identifier));
     return issueAccessToken(user);
   }
@@ -187,8 +189,9 @@ public class AuthServiceImpl implements AuthService {
       if (ObjectUtils.isNotEmpty(jwt.getId())) {
         redis.delete(sessionKey(jwt.getId()));
       }
-    } catch (RuntimeException ignored) {
+    } catch (RuntimeException exception) {
       // Do nothing. Logout stays idempotent for invalid or already-expired tokens.
+      log.debug("Logout ignored for invalid or expired token", exception);
     }
   }
 
@@ -210,18 +213,19 @@ public class AuthServiceImpl implements AuthService {
       }
 
       List<GrantedAuthority> authorities = new ArrayList<>();
-      String role = jwt.getClaimAsString("role");
+      String role = jwt.getClaimAsString(Constant.ROLE);
       if (ObjectUtils.isNotEmpty(role)) {
         authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
       }
-      List<String> permissions = jwt.getClaimAsStringList("permissions");
+      List<String> permissions = jwt.getClaimAsStringList(Constant.PERMISSIONS);
       if (ObjectUtils.isNotEmpty(permissions)) {
         permissions.forEach(p -> authorities.add(new SimpleGrantedAuthority("PERM_" + p)));
       }
 
       return Optional.of(
           new AuthenticatedPrincipal(UUID.fromString(userId), tokenId, List.copyOf(authorities)));
-    } catch (RuntimeException ignored) {
+    } catch (RuntimeException exception) {
+      log.debug("Authentication failed for supplied token", exception);
       return Optional.empty();
     }
   }
@@ -239,7 +243,7 @@ public class AuthServiceImpl implements AuthService {
         tempPhone = "+" + tempPhone;
       }
 
-      Phonenumber.PhoneNumber phoneNumber = phoneUtil.parse(tempPhone, "VN");
+      Phonenumber.PhoneNumber phoneNumber = phoneUtil.parse(tempPhone, Constant.VIETNAM);
       if (phoneUtil.isValidNumber(phoneNumber)) {
         String e164Number = phoneUtil.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164);
         return e164Number.replace("+", "");
@@ -274,7 +278,8 @@ public class AuthServiceImpl implements AuthService {
   private String registrationKey(String identifier) {
     try {
       byte[] digest =
-          MessageDigest.getInstance("SHA-256").digest(identifier.getBytes(StandardCharsets.UTF_8));
+          MessageDigest.getInstance(Constant.SHA_256)
+              .digest(identifier.getBytes(StandardCharsets.UTF_8));
       return "auth:registration:" + HexFormat.of().formatHex(digest);
     } catch (NoSuchAlgorithmException exception) {
       throw new IllegalStateException("SHA-256 is not available", exception);
@@ -328,7 +333,7 @@ public class AuthServiceImpl implements AuthService {
   private String hashOtp(String code) {
     try {
       byte[] digest =
-          MessageDigest.getInstance("SHA-256").digest(code.getBytes(StandardCharsets.UTF_8));
+          MessageDigest.getInstance(Constant.SHA_256).digest(code.getBytes(StandardCharsets.UTF_8));
       return HexFormat.of().formatHex(digest);
     } catch (NoSuchAlgorithmException exception) {
       throw new IllegalStateException("SHA-256 is not available", exception);

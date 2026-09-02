@@ -39,6 +39,16 @@ public class MaintenanceFilter extends OncePerRequestFilter {
     this.objectMapper = objectMapper;
   }
 
+  private static Route routeFor(HttpServletRequest request) {
+    return ROUTES.stream()
+        .filter(
+            route ->
+                route.method().equals(request.getMethod())
+                    && PATH_MATCHER.match(route.path(), request.getRequestURI()))
+        .findFirst()
+        .orElse(null);
+  }
+
   @Override
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -53,16 +63,6 @@ public class MaintenanceFilter extends OncePerRequestFilter {
       return;
     }
     chain.doFilter(request, response);
-  }
-
-  private static Route routeFor(HttpServletRequest request) {
-    return ROUTES.stream()
-        .filter(
-            route ->
-                route.method().equals(request.getMethod())
-                    && PATH_MATCHER.match(route.path(), request.getRequestURI()))
-        .findFirst()
-        .orElse(null);
   }
 
   private void writeMaintenanceResponse(HttpServletResponse response) throws IOException {

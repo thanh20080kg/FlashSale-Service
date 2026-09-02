@@ -27,22 +27,28 @@ public interface FlashSaleItemQuotaRepository extends JpaRepository<FlashSaleIte
    */
   @Modifying
   @Query(
-      """
-      update FlashSaleItemQuota q set q.remainingQuantity = q.remainingQuantity - :quota
-      where q.flashSaleItemId = :itemId and q.saleDate = :saleDate and q.remainingQuantity > 0
-      """)
+      value =
+          "UPDATE flash_sale_item_quotas SET remaining_quantity = remaining_quantity - :quota WHERE flash_sale_item_id = :itemId AND sale_date = :saleDate AND remaining_quantity >= :quota",
+      nativeQuery = true)
   int decrement(
-      @Param("itemId") UUID itemId,
+      @Param("itemId") String itemId,
       @Param("quota") int quota,
       @Param("saleDate") LocalDate saleDate);
+
+  @Modifying
+  @org.springframework.transaction.annotation.Transactional
+  @Query(
+      value =
+          "UPDATE flash_sale_item_quotas SET remaining_quantity = remaining_quantity + 1 WHERE flash_sale_item_id = :itemId AND sale_date = :saleDate AND remaining_quantity < total_quantity",
+      nativeQuery = true)
+  int restore(@Param("itemId") String itemId, @Param("saleDate") LocalDate saleDate);
 
   /** Compensating update used when a downstream step of the purchase fails outside the tx. */
   @Modifying
   @Query(
-      """
-      update FlashSaleItemQuota q set q.remainingQuantity = 0
-      where q.flashSaleItemId in :itemIds and q.saleDate = :saleDate
-      """)
+      value =
+          "UPDATE flash_sale_item_quotas SET remaining_quantity = 0 WHERE flash_sale_item_id IN (:itemIds) AND sale_date = :saleDate",
+      nativeQuery = true)
   int closeQuotas(
-      @Param("itemIds") Collection<UUID> itemIds, @Param("saleDate") LocalDate saleDate);
+      @Param("itemIds") Collection<String> itemIds, @Param("saleDate") LocalDate saleDate);
 }

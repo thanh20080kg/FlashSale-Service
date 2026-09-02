@@ -22,8 +22,7 @@ public class PurchaseStatusSyncService {
         purchases.findAllById(purchaseIds).stream()
             .map(
                 purchase ->
-                    new PurchaseStatusSyncDtos.Entry(
-                        purchase.getId(), purchase.getStatus().name()))
+                    new PurchaseStatusSyncDtos.Entry(purchase.getId(), purchase.getStatus().name()))
             .toList();
     return new PurchaseStatusSyncDtos.Response(entries);
   }

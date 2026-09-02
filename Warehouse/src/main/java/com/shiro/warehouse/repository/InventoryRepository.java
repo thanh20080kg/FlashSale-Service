@@ -17,7 +17,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
           "UPDATE inventories SET available_quantity = available_quantity - :quantity "
               + "WHERE product_id = :productId AND available_quantity >= :quantity",
       nativeQuery = true)
-  int reserve(@Param("productId") UUID productId, @Param("quantity") long quantity);
+  int reserve(@Param("productId") String productId, @Param("quantity") long quantity);
 
   @Modifying
   @Query(
@@ -25,7 +25,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
           "UPDATE inventories SET available_quantity = available_quantity + :quantity "
               + "WHERE product_id = :productId",
       nativeQuery = true)
-  int release(@Param("productId") UUID productId, @Param("quantity") long quantity);
+  int release(@Param("productId") String productId, @Param("quantity") long quantity);
 
   @Modifying
   @Query(
@@ -33,5 +33,5 @@ public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
           "UPDATE inventories SET sold_quantity = sold_quantity + :quantity "
               + "WHERE product_id = :productId",
       nativeQuery = true)
-  int sold(@Param("productId") UUID productId, @Param("quantity") long quantity);
+  int sold(@Param("productId") String productId, @Param("quantity") long quantity);
 }

@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: payment-schema-001
+      author: payment
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE accounts (
+                id VARCHAR(36) NOT NULL PRIMARY KEY,
+                current_amount DECIMAL(19,2) NOT NULL,
+                available_amount DECIMAL(19,2) NOT NULL,
+                active BOOLEAN NOT NULL,
+                created_at DATETIME(6) NOT NULL,
+                updated_at DATETIME(6) NOT NULL,
+                CONSTRAINT chk_account_current_nonnegative CHECK (current_amount >= 0),
+                CONSTRAINT chk_account_available_valid CHECK (available_amount >= 0 AND available_amount <= current_amount)
+              );
+              CREATE TABLE payment_transactions (
+                id VARCHAR(36) NOT NULL PRIMARY KEY,
+                purchase_id VARCHAR(36) NOT NULL,
+                payer_account_id VARCHAR(36) NOT NULL,
+                payee_account_id VARCHAR(36) NOT NULL,
+                parent_transaction_id VARCHAR(36) NULL,
+                amount DECIMAL(19,2) NOT NULL,
+                type VARCHAR(20) NOT NULL,
+                status VARCHAR(20) NOT NULL,
+                failure_reason VARCHAR(255) NULL,
+                created_at DATETIME(6) NOT NULL,
+                updated_at DATETIME(6) NOT NULL,
+                CONSTRAINT uk_payment_purchase_type UNIQUE (purchase_id, type),
+                CONSTRAINT fk_payment_payer_account FOREIGN KEY (payer_account_id) REFERENCES accounts(id),
+                CONSTRAINT fk_payment_payee_account FOREIGN KEY (payee_account_id) REFERENCES accounts(id),
+                CONSTRAINT fk_payment_parent FOREIGN KEY (parent_transaction_id) REFERENCES payment_transactions(id),
+                CONSTRAINT chk_payment_amount_positive CHECK (amount > 0)
+              );
+              CREATE INDEX idx_payment_purchase ON payment_transactions(purchase_id);
+              CREATE INDEX idx_payment_status_updated ON payment_transactions(status, updated_at);
+              INSERT INTO accounts (id, current_amount, available_amount, active, created_at, updated_at)
+              VALUES
+                ('11111111-0000-0000-0000-000000000001', 100000000.00, 100000000.00, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('11111111-0000-0000-0000-000000000002', 0.00, 0.00, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
