@@ -1,23 +1,17 @@
 package com.shiro.authentication.controller;
 
-import com.shiro.authentication.dto.AuthResponse;
-import com.shiro.authentication.dto.LoginRequest;
-import com.shiro.authentication.dto.MessageResponse;
-import com.shiro.authentication.dto.RegisterRequest;
-import com.shiro.authentication.dto.VerifyOtpRequest;
+import com.shiro.authentication.dto.*;
 import com.shiro.authentication.service.AuthService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class AuthController {
   private final AuthService service;
-
-  public AuthController(AuthService service) {
-    this.service = service;
-  }
 
   @PostMapping("/register")
   public MessageResponse register(@Valid @RequestBody RegisterRequest request) {

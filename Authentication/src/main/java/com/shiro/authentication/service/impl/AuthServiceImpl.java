@@ -11,11 +11,7 @@ import com.shiro.authentication.constants.AuthChannel;
 import com.shiro.authentication.constants.Constant;
 import com.shiro.authentication.constants.NotificationTemplateCode;
 import com.shiro.authentication.constants.OtpPurpose;
-import com.shiro.authentication.dto.AuthResponse;
-import com.shiro.authentication.dto.AuthenticatedPrincipal;
-import com.shiro.authentication.dto.LoginRequest;
-import com.shiro.authentication.dto.RegisterRequest;
-import com.shiro.authentication.dto.VerifyOtpRequest;
+import com.shiro.authentication.dto.*;
 import com.shiro.authentication.entity.Customer;
 import com.shiro.authentication.entity.OtpChallenge;
 import com.shiro.authentication.entity.User;
@@ -35,14 +31,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import lombok.AllArgsConstructor;
+import java.util.*;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,17 +42,12 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwsHeader;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
   private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 

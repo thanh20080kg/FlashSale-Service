@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,16 +21,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
+@AllArgsConstructor
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
   private static final String BEARER = "Bearer ";
 
   private final JwtDecoder jwtDecoder;
   private final RedisService redisService;
-
-  public TokenAuthenticationFilter(JwtDecoder jwtDecoder, RedisService redisService) {
-    this.jwtDecoder = jwtDecoder;
-    this.redisService = redisService;
-  }
 
   @Override
   protected void doFilterInternal(

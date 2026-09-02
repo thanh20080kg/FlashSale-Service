@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.AllArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -20,12 +21,9 @@ import tools.jackson.databind.ObjectMapper;
  * have to be rendered here to keep every error response in the same shape.
  */
 @Component
+@AllArgsConstructor
 public class SecurityErrorResponder implements AuthenticationEntryPoint, AccessDeniedHandler {
   private final ObjectMapper objectMapper;
-
-  public SecurityErrorResponder(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
 
   @Override
   public void commence(

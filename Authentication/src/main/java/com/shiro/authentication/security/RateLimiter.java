@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,17 +15,13 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class RateLimiter {
   private static final Logger log = LoggerFactory.getLogger(RateLimiter.class);
   private static final String PREFIX = "rl:";
 
   private final StringRedisTemplate redis;
   private final AppProperties properties;
-
-  public RateLimiter(StringRedisTemplate redis, AppProperties properties) {
-    this.redis = redis;
-    this.properties = properties;
-  }
 
   private static String hash(String subject) {
     try {

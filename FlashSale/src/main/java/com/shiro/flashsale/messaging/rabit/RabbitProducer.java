@@ -2,6 +2,7 @@ package com.shiro.flashsale.messaging.rabit;
 
 import com.shiro.flashsale.config.AppProperties;
 import java.util.Objects;
+import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -10,6 +11,7 @@ import tools.jackson.databind.ObjectMapper;
 
 /** Sends request/reply messages. Business response interpretation belongs to the client. */
 @Component
+@AllArgsConstructor
 public class RabbitProducer {
 
   private static final Logger log = LoggerFactory.getLogger(RabbitProducer.class);
@@ -17,13 +19,6 @@ public class RabbitProducer {
   private final RabbitTemplate rabbitTemplate;
   private final ObjectMapper objectMapper;
   private final AppProperties properties;
-
-  public RabbitProducer(
-      RabbitTemplate rabbitTemplate, ObjectMapper objectMapper, AppProperties properties) {
-    this.rabbitTemplate = rabbitTemplate;
-    this.objectMapper = objectMapper;
-    this.properties = properties;
-  }
 
   public String send(String queue, Object payload) throws Exception {
     return send(queue, payload, 0);

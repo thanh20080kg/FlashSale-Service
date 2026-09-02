@@ -6,5 +6,6 @@ public final class ServiceConstants {
       "Inventory was not found while releasing reservation";
   public static final String INVENTORY_NOT_FOUND_WHILE_CONFIRMING =
       "Inventory was not found while confirming reservation";
+
   private ServiceConstants() {}
 }

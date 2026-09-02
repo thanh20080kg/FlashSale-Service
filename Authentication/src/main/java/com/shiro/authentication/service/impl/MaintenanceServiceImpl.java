@@ -6,20 +6,18 @@ import com.shiro.authentication.service.MaintenanceService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class MaintenanceServiceImpl implements MaintenanceService {
   private static final String ALL_APIS_KEY = "MAINTENANCE_ALL";
   private final AppConfigurationRepository configurationsRepository;
   private volatile Map<String, String> configurations = Map.of();
-
-  public MaintenanceServiceImpl(AppConfigurationRepository configurationsRepository) {
-    this.configurationsRepository = configurationsRepository;
-  }
 
   private static boolean isOn(String value) {
     return Boolean.parseBoolean(value);

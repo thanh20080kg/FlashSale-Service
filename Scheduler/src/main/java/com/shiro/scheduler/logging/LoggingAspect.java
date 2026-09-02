@@ -2,6 +2,7 @@ package com.shiro.scheduler.logging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -16,13 +17,10 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 @Order(1)
+@AllArgsConstructor
 public class LoggingAspect {
   private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
   private final ObjectMapper objectMapper;
-
-  public LoggingAspect(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
 
   @Around(
       "execution(public * com.shiro.scheduler..*(..))"

@@ -13,5 +13,6 @@ public final class PaymentConstants {
   public static final String TRANSACTION_CANCEL_FAILED = "TRANSACTION_CANCEL_FAILED";
   public static final String TRANSACTION_NOT_FOUND = "TRANSACTION_NOT_FOUND";
   public static final String INVALID_REQUEST = "INVALID_REQUEST";
+
   private PaymentConstants() {}
 }

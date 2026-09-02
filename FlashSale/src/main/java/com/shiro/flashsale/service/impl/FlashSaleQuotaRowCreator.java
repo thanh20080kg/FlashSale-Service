@@ -4,6 +4,7 @@ import com.shiro.flashsale.entity.FlashSaleItemQuota;
 import com.shiro.flashsale.repository.FlashSaleItemQuotaRepository;
 import java.time.LocalDate;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,12 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
  * exception cross a transaction boundary keeps the caller's persistence context clean.
  */
 @Service
+@AllArgsConstructor
 public class FlashSaleQuotaRowCreator {
   private final FlashSaleItemQuotaRepository quotas;
-
-  public FlashSaleQuotaRowCreator(FlashSaleItemQuotaRepository quotas) {
-    this.quotas = quotas;
-  }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void create(UUID itemId, LocalDate saleDate, long quantity) {

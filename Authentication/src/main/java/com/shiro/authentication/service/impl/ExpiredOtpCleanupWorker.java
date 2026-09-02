@@ -3,6 +3,7 @@ package com.shiro.authentication.service.impl;
 import com.shiro.authentication.repository.OtpChallengeRepository;
 import java.time.Duration;
 import java.time.Instant;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,16 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @ConditionalOnProperty(name = "app.otp-clear.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class ExpiredOtpCleanupWorker {
   private static final Logger log = LoggerFactory.getLogger(ExpiredOtpCleanupWorker.class);
   private final OtpChallengeRepository otps;
 
   @Value("${app.otp-clear.retention}")
   private Duration RETENTION;
-
-  public ExpiredOtpCleanupWorker(OtpChallengeRepository otps) {
-    this.otps = otps;
-  }
 
   @Scheduled(
       fixedDelayString = "${app.otp-clear.interval}",

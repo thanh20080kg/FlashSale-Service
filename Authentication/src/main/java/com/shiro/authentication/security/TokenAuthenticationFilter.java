@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,13 +15,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /** Authenticates bearer tokens only while their jti is active in shared Redis. */
 @Component
+@RequiredArgsConstructor
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
   private static final String BEARER = "Bearer ";
   private final AuthService authService;
-
-  public TokenAuthenticationFilter(AuthService authService) {
-    this.authService = authService;
-  }
 
   @Override
   protected void doFilterInternal(

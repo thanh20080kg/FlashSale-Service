@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -22,6 +23,7 @@ import tools.jackson.databind.ObjectMapper;
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
+@RequiredArgsConstructor
 public class MaintenanceFilter extends OncePerRequestFilter {
   private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
   private static final List<Route> ROUTES =
@@ -33,11 +35,6 @@ public class MaintenanceFilter extends OncePerRequestFilter {
 
   private final MaintenanceService maintenanceConfig;
   private final ObjectMapper objectMapper;
-
-  public MaintenanceFilter(MaintenanceService maintenanceConfig, ObjectMapper objectMapper) {
-    this.maintenanceConfig = maintenanceConfig;
-    this.objectMapper = objectMapper;
-  }
 
   private static Route routeFor(HttpServletRequest request) {
     return ROUTES.stream()

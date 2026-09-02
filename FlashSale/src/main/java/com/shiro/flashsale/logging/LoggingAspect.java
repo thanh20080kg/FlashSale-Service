@@ -1,6 +1,7 @@
 package com.shiro.flashsale.logging;
 
 import java.util.UUID;
+import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -16,13 +17,10 @@ import tools.jackson.databind.ObjectMapper;
 @Aspect
 @Component
 @Order(1)
+@AllArgsConstructor
 public class LoggingAspect {
   private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
   private final ObjectMapper objectMapper;
-
-  public LoggingAspect(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
 
   @Around("within(com.shiro.flashsale.controller..*)")
   public Object logRequestResponse(ProceedingJoinPoint joinPoint) throws Throwable {

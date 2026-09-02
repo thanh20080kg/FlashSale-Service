@@ -9,6 +9,7 @@ import com.shiro.notification.repository.NotificationTemplateRepository;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@AllArgsConstructor
 public class NotificationConsumer {
   private static final Logger log = LoggerFactory.getLogger(NotificationConsumer.class);
   private static final Pattern PARAMETER = Pattern.compile("\\{\\{\\s*([a-zA-Z0-9_.-]+)\\s*}}");
@@ -24,15 +26,6 @@ public class NotificationConsumer {
   private final ObjectMapper objectMapper;
   private final NotificationTemplateRepository templates;
   private final StringRedisTemplate redis;
-
-  public NotificationConsumer(
-      ObjectMapper objectMapper,
-      NotificationTemplateRepository templates,
-      StringRedisTemplate redis) {
-    this.objectMapper = objectMapper;
-    this.templates = templates;
-    this.redis = redis;
-  }
 
   @KafkaListener(topics = "${app.kafka.topic}", groupId = "${app.kafka.group-id}")
   @Transactional(readOnly = true)

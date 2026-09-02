@@ -3,6 +3,7 @@ package com.shiro.flashsale.service.impl;
 import com.shiro.flashsale.repository.FlashSaleItemQuotaRepository;
 import java.time.LocalDate;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -10,16 +11,11 @@ import org.springframework.stereotype.Service;
 
 /** Lazily materialises the {@code (item, sale_date)} quota row before the purchase transaction. */
 @Service
+@RequiredArgsConstructor
 public class FlashSaleQuotaService {
   private static final Logger log = LoggerFactory.getLogger(FlashSaleQuotaService.class);
   private final FlashSaleItemQuotaRepository quotas;
   private final FlashSaleQuotaRowCreator creator;
-
-  public FlashSaleQuotaService(
-      FlashSaleItemQuotaRepository quotas, FlashSaleQuotaRowCreator creator) {
-    this.quotas = quotas;
-    this.creator = creator;
-  }
 
   public void ensureQuotaForToday(UUID itemId, LocalDate saleDate, long quantity) {
     if (quotas.existsByFlashSaleItemIdAndSaleDate(itemId, saleDate)) {

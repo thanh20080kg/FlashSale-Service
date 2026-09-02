@@ -10,5 +10,6 @@ public final class ServiceConstants {
   public static final String PAYMENT_RETRY_MESSAGE = "Payment failed, please retry";
   public static final String PURCHASE_STATUS_UPDATE_FAILED = "Purchase status update failed: ";
   public static final String PURCHASE_PAYMENT_UPDATE_FAILED = "Purchase payment update failed: ";
+
   private ServiceConstants() {}
 }
