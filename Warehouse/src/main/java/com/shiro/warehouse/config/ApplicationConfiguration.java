@@ -1,4 +1,4 @@
-package com.shiro.flashsale.config;
+package com.shiro.warehouse.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;

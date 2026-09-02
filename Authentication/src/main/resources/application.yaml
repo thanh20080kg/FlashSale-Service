@@ -9,6 +9,9 @@ spring:
     username: ${MYSQL_USERNAME:authentication_user}
     password: ${MYSQL_PASSWORD:P@ssword}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
   jpa:
     hibernate:
       ddl-auto: none
@@ -46,7 +49,7 @@ app:
   kafka:
     topic:
       notification: ${KAFKA_NOTIFICATION_TOPIC:notification.requested}
-      maintenance: ${KAFKA_MAINTENANCE_TOPIC:maintenance.config.reload}
+      maintenance: ${KAFKA_RELOAD_CONFIG_TOPIC:service.config.reload}
   rate-limit:
     enabled: ${RATE_LIMIT_ENABLED:true}
     rules:

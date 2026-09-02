@@ -39,7 +39,7 @@ app:
     sync-batch-size: 10
   kafka-topic:
     payment-status-sync: payment.status.sync.test
-    trigger-reload: maintenance.config.reload.test
+    trigger-reload: service.config.reload.test
     quota-reload-topic: flashsale.quota.reload.test
   warehouse:
     queue: warehouse.inventory.commands.test

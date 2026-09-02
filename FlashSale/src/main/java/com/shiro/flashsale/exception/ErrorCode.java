@@ -2,10 +2,6 @@ package com.shiro.flashsale.exception;
 
 import org.springframework.http.HttpStatus;
 
-/**
- * Single catalogue of business error codes and the HTTP status each maps to. Messages stay
- * deliberately generic so no account existence, balance or stock detail leaks to the caller.
- */
 public enum ErrorCode {
   // --- auth ---
   INVALID_IDENTIFIER(HttpStatus.BAD_REQUEST, "identifier must be a valid email or phone number"),

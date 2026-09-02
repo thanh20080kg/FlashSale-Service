@@ -10,7 +10,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.ObjectUtils;
 
-/** Reads masking rules from logback-spring.xml; changing rules needs no code rebuild. */
 public class PiiMaskingConverter extends CompositeConverter<ILoggingEvent> {
   private static final String SEPARATOR = "|||";
   private static final String KEEP_EMAIL = "KEEP_EMAIL";

@@ -8,7 +8,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
-/** Sends request/reply messages. Business response interpretation belongs to the client. */
 @Component
 @AllArgsConstructor
 public class RabbitProducer {

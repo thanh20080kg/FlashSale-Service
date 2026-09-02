@@ -4,13 +4,6 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/**
- * Per-day remaining quota of a flash sale item.
- *
- * <p>Slots recur every day, so the allowance has to recur with them. Keeping the counter in its own
- * {@code (item, sale_date)} row means yesterday's sell-out never blocks today, and the row is
- * created lazily on first purchase of the day rather than by a batch job that could miss a run.
- */
 @Entity
 @Table(
     name = "flash_sale_item_quotas",

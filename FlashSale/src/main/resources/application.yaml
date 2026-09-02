@@ -7,11 +7,8 @@ spring:
     password: ${MYSQL_PASSWORD:P@ssword}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-      # The purchase transaction is short (4 statements). Sized for ~500 TPS:
-      # 500 TPS * ~8ms in-transaction time ~= 4 busy connections, 60 leaves headroom
-      # for the listing endpoint, the sync worker and traffic spikes.
-      maximum-pool-size: ${DB_POOL_SIZE:60}
-      minimum-idle: ${DB_POOL_MIN_IDLE:10}
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
       connection-timeout: 3000
       validation-timeout: 2000
       max-lifetime: 600000
@@ -85,7 +82,6 @@ app:
     otp-max-attempts: 5
     registration-ttl: 1h
   sale:
-    limit-daily-purchase: ${SALE_LIMIT_DAILY_PURCHASE:1000}
     current-items-cache-ttl: ${SALE_LISTING_CACHE_TTL:2s}
   warehouse:
     queue: ${WAREHOUSE_INVENTORY_QUEUE:warehouse.inventory.commands}
@@ -96,7 +92,7 @@ app:
     timeout: ${PAYMENT_TIMEOUT:15s}
     sync-batch-size: ${PAYMENT_SYNC_BATCH_SIZE:100}
   kafka-topic:
-    trigger-reload: ${KAFKA_RELOAD_CONFIG_TOPIC:maintenance.config.reload}
+    trigger-reload: ${KAFKA_RELOAD_CONFIG_TOPIC:service.config.reload}
     quota-reload-topic: ${KAFKA_QUOTA_RELOAD_TOPIC:flashsale.quota.reload}
     payment-status-sync: ${KAFKA_PAYMENT_STATUS_SYNC_TOPIC:payment.status.sync}
 

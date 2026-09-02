@@ -7,6 +7,9 @@ spring:
     username: ${MYSQL_USERNAME:warehouse_user}
     password: ${MYSQL_PASSWORD:P@ssword}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
   jpa:
     hibernate:
       ddl-auto: none
@@ -27,6 +30,8 @@ spring:
       auto-offset-reset: latest
       group-id: ${KAFKA_WAREHOUSE_STATUS_SYNC_GROUP_ID:warehouse-service}
 app:
+  status-sync:
+    batch-size: ${WAREHOUSE_STATUS_SYNC_BATCH_SIZE:100}
   kafka-topic:
     trigger-status-sync: ${KAFKA_WAREHOUSE_STATUS_SYNC_TOPIC:warehouse.purchase-status.sync}
   rabbit-queue:

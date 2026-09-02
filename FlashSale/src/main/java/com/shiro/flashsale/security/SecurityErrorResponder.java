@@ -16,10 +16,6 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
-/**
- * Denials happen inside the filter chain, before any controller advice can see them, so 401 and 403
- * have to be rendered here to keep every error response in the same shape.
- */
 @Component
 @AllArgsConstructor
 public class SecurityErrorResponder implements AuthenticationEntryPoint, AccessDeniedHandler {

@@ -19,10 +19,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.databind.ObjectMapper;
 
-/**
- * Per-IP throttling of the endpoints worth abusing. Identifier-scoped limits (per email/phone) are
- * applied deeper in {@code AuthServiceImpl}, where the identifier is known and normalised.
- */
 @Component
 @Order(1)
 public class RateLimitFilter extends OncePerRequestFilter {

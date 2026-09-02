@@ -20,11 +20,6 @@ public interface FlashSaleItemQuotaRepository extends JpaRepository<FlashSaleIte
   List<FlashSaleItemQuota> findByFlashSaleItemIdInAndSaleDate(
       Collection<UUID> flashSaleItemIds, LocalDate saleDate);
 
-  /**
-   * The single source of truth for "never oversell". The {@code remainingQuantity > 0} predicate is
-   * evaluated by the database while it holds the row lock, so N concurrent callers produce at most
-   * N successful decrements and never more than the configured quota.
-   */
   @Modifying
   @Query(
       value =
@@ -43,7 +38,6 @@ public interface FlashSaleItemQuotaRepository extends JpaRepository<FlashSaleIte
       nativeQuery = true)
   int restore(@Param("itemId") String itemId, @Param("saleDate") LocalDate saleDate);
 
-  /** Compensating update used when a downstream step of the purchase fails outside the tx. */
   @Modifying
   @Query(
       value =

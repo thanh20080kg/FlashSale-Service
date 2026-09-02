@@ -16,7 +16,7 @@ databaseChangeLog:
               CREATE TABLE app_configuration (config_key varchar(190) not null primary key, config_value varchar(500) not null );
 
   - changeSet:
-      id: 003-01-seed-products
+      id: 001-01-seed-products
       author: flashsale
       context: "!no-seed"
       changes:
@@ -32,7 +32,7 @@ databaseChangeLog:
               - column: { name: active, type: BOOLEAN }
 
   - changeSet:
-      id: 003-03-seed-slots
+      id: 001-02-seed-slots
       author: flashsale
       context: "!no-seed"
       changes:
@@ -48,7 +48,7 @@ databaseChangeLog:
               - column: { name: active, type: BOOLEAN }
 
   - changeSet:
-      id: 003-04-seed-items
+      id: 001-03-seed-items
       author: flashsale
       context: "!no-seed"
       changes:
@@ -63,3 +63,16 @@ databaseChangeLog:
               - column: { name: amount, type: NUMERIC }
               - column: { name: quantity, type: NUMERIC }
               - column: { name: active, type: BOOLEAN }
+
+  - changeSet:
+      id: 001-04-seed-configuration
+      author: flashsale
+      context: "!no-seed"
+      changes:
+        - loadData:
+            tableName: app_configuration
+            file: db/changelog/data/app_configuration.csv
+            separator: ","
+            columns:
+              - column: { name: config_key, type: STRING }
+              - column: { name: config_value, type: STRING }

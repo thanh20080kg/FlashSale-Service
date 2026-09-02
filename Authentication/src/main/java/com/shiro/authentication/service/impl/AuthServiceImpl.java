@@ -7,10 +7,7 @@ import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 import com.shiro.authentication.config.AppProperties;
-import com.shiro.authentication.constants.AuthChannel;
-import com.shiro.authentication.constants.Constant;
-import com.shiro.authentication.constants.NotificationTemplateCode;
-import com.shiro.authentication.constants.OtpPurpose;
+import com.shiro.authentication.constants.*;
 import com.shiro.authentication.dto.*;
 import com.shiro.authentication.entity.Customer;
 import com.shiro.authentication.entity.OtpChallenge;
@@ -257,7 +254,7 @@ public class AuthServiceImpl implements AuthService {
   }
 
   private String sessionKey(String tokenId) {
-    return "auth:token:" + tokenId;
+    return RedisKeyConstants.AUTH_TOKEN + tokenId;
   }
 
   private String registrationKey(String identifier) {

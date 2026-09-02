@@ -1,8 +1,8 @@
 package com.shiro.flashsale.service;
 
 import com.shiro.flashsale.config.AppProperties;
+import com.shiro.flashsale.constants.PaymentStatus;
 import com.shiro.flashsale.constants.PurchaseStatus;
-import com.shiro.flashsale.constants.ServiceConstants;
 import com.shiro.flashsale.entity.Purchase;
 import com.shiro.flashsale.repository.PurchaseRepository;
 import java.util.List;
@@ -33,15 +33,15 @@ public class PaymentStatusSyncService {
   private void sync(Purchase purchase) {
     try {
       var status = payment.status(purchase.getId());
-      if (ServiceConstants.COMPLETE.equals(status.status())) {
+      if (PaymentStatus.COMPLETE.name().equals(status.status())) {
         persistence.updateStatus(purchase.getId(), PurchaseStatus.SUCCESS);
         try {
           warehouse.sold(purchase.getItem().getProduct().getId(), purchase.getId().toString());
         } catch (RuntimeException exception) {
           log.warn("Could not finalize warehouse for {}", purchase.getId(), exception);
         }
-      } else if (ServiceConstants.FAILED.equals(status.status())
-          || ServiceConstants.CANCELLED.equals(status.status())) {
+      } else if (PaymentStatus.FAILED.name().equals(status.status())
+          || PaymentStatus.CANCELLED.name().equals(status.status())) {
         persistence.updateStatus(purchase.getId(), PurchaseStatus.FAILED);
         restoreQuota(purchase);
         try {
@@ -49,6 +49,15 @@ public class PaymentStatusSyncService {
         } catch (RuntimeException exception) {
           log.warn("Could not release warehouse for {}", purchase.getId(), exception);
         }
+      } else if (PaymentStatus.PENDING.name().equals(status.status())) {
+        persistence.updateStatus(purchase.getId(), PurchaseStatus.FAILED);
+        restoreQuota(purchase);
+        try {
+          warehouse.release(purchase.getId().toString(), purchase.getItem().getProduct().getId());
+        } catch (RuntimeException exception) {
+          log.warn("Could not release warehouse for {}", purchase.getId(), exception);
+        }
+        payment.cancel(purchase.getId());
       }
     } catch (RuntimeException exception) {
       log.warn("Payment status sync failed for purchase {}", purchase.getId(), exception);

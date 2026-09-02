@@ -76,10 +76,6 @@ public class SecurityConfig {
     return source;
   }
 
-  /**
-   * {@code @Component} filters are auto-registered with the servlet container. The token filter
-   * belongs to the Spring Security chain only, so its container registration is switched off.
-   */
   @Bean
   FilterRegistrationBean<TokenAuthenticationFilter> disableTokenFilterAutoRegistration(
       TokenAuthenticationFilter filter) {

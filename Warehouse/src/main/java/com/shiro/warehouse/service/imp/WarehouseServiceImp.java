@@ -3,6 +3,7 @@ package com.shiro.warehouse.service.imp;
 import static com.shiro.warehouse.constants.OrderStatus.*;
 
 import com.shiro.warehouse.client.FlashSaleClient;
+import com.shiro.warehouse.config.AppProperties;
 import com.shiro.warehouse.constants.OrderStatus;
 import com.shiro.warehouse.constants.PurchaseStatus;
 import com.shiro.warehouse.constants.ServiceConstants;
@@ -15,12 +16,18 @@ import com.shiro.warehouse.repository.InventoryRepository;
 import com.shiro.warehouse.repository.InventoryReservationRepository;
 import com.shiro.warehouse.service.WarehouseService;
 import jakarta.transaction.Transactional;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.kafka.common.errors.ApiException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -32,6 +39,7 @@ public class WarehouseServiceImp implements WarehouseService {
   private final FlashSaleClient flashSaleClient;
   private final RabbitTemplate rabbitTemplate;
   private final ObjectMapper objectMapper;
+  private final AppProperties properties;
 
   @Value("${app.status-sync.rabbit-queue:flashsale.purchase-status.sync}")
   private String statusSyncQueue;
@@ -125,7 +133,9 @@ public class WarehouseServiceImp implements WarehouseService {
   @Override
   @Transactional
   public void syncPurchaseStatuses() {
-    List<InventoryReservation> pending = reservations.findByStatus(RESERVED.name());
+    int batchSize = Math.max(1, properties.getStatusSync().getBatchSize());
+    List<InventoryReservation> pending =
+        reservations.findByStatusOrderByCreatedAtAsc(RESERVED.name(), PageRequest.of(0, batchSize));
     Map<UUID, InventoryReservation> byPurchaseId = new LinkedHashMap<>();
     for (InventoryReservation reservation : pending) {
       byPurchaseId.put(reservation.getReservationKey(), reservation);
@@ -136,8 +146,6 @@ public class WarehouseServiceImp implements WarehouseService {
 
     PurchaseStatusSyncDtos.Response response =
         requestStatuses(byPurchaseId.keySet().stream().toList());
-
-    // Update purchase statuses
     Optional.ofNullable(response.purchases())
         .orElseGet(Collections::emptyList)
         .forEach(

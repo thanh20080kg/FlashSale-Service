@@ -1,6 +1,6 @@
 package com.shiro.flashsale.security;
 
-import com.shiro.flashsale.service.MaintenanceService;
+import com.shiro.flashsale.service.ReloadConfigService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -57,11 +57,11 @@ public class MaintenanceFilter extends OncePerRequestFilter {
               "/api/v1/admin/inventory-sync/status",
               "MAINTENANCE_ADMIN_INVENTORY_SYNC_STATUS"));
 
-  private final MaintenanceService maintenanceConfig;
+  private final ReloadConfigService reloadConfigService;
   private final ObjectMapper objectMapper;
 
-  public MaintenanceFilter(MaintenanceService maintenanceConfig, ObjectMapper objectMapper) {
-    this.maintenanceConfig = maintenanceConfig;
+  public MaintenanceFilter(ReloadConfigService reloadConfigService, ObjectMapper objectMapper) {
+    this.reloadConfigService = reloadConfigService;
     this.objectMapper = objectMapper;
   }
 
@@ -84,7 +84,7 @@ public class MaintenanceFilter extends OncePerRequestFilter {
       return;
     }
     Route route = routeFor(request);
-    if (maintenanceConfig.isMaintenance(ObjectUtils.isEmpty(route) ? null : route.configKey())) {
+    if (reloadConfigService.isMaintenance(ObjectUtils.isEmpty(route) ? null : route.configKey())) {
       writeMaintenanceResponse(response);
       return;
     }

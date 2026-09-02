@@ -13,6 +13,7 @@ import com.shiro.flashsale.repository.FlashSaleItemRepository;
 import com.shiro.flashsale.repository.PurchaseRepository;
 import com.shiro.flashsale.service.PurchaseExecuter;
 import com.shiro.flashsale.service.RedisService;
+import com.shiro.flashsale.service.ReloadConfigService;
 import com.shiro.flashsale.service.SaleService;
 import java.time.*;
 import java.util.Date;
@@ -40,6 +41,7 @@ public class SaleServiceImpl implements SaleService {
   private final FlashSaleQuotaService quotaService;
   private final PurchaseExecuter executor;
   private final RedisService redisService;
+  private final ReloadConfigService reloadConfigService;
   private final ObjectMapper objectMapper;
   private final AppProperties properties;
 
@@ -112,7 +114,7 @@ public class SaleServiceImpl implements SaleService {
   private void validatePrePurchase(String dailyLimitKey, String itemQuotaKey) {
     Long purchaseCount = dailyPurchaseCount(dailyLimitKey);
     Long consumeQuota = consumeQuota(itemQuotaKey);
-    if (purchaseCount > properties.getSale().getLimitDailyPurchase()) {
+    if (purchaseCount > reloadConfigService.getLimitDailyPurchase()) {
       rollbackDailyLimit(dailyLimitKey);
       refundQuota(itemQuotaKey);
       throw ApiException.of(ErrorCode.DAILY_LIMIT_REACHED);
@@ -138,6 +140,7 @@ public class SaleServiceImpl implements SaleService {
                     p.getItem().getProduct().getName(),
                     p.getAmount(),
                     p.getPurchaseDate(),
+                    p.getStatus().name(),
                     p.getCreatedAt()))
         .toList();
   }

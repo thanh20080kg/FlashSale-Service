@@ -42,6 +42,7 @@ public final class SaleDtos {
       String productName,
       BigDecimal amount,
       LocalDate purchaseDate,
+      String status,
       Instant createdAt) {}
 
   public record BalanceResponse(UUID customerId, String displayName, BigDecimal balance) {}

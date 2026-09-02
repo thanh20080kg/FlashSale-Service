@@ -1,6 +1,6 @@
 package com.shiro.flashsale.service;
 
-import com.shiro.flashsale.config.AppProperties;
+import com.shiro.flashsale.constants.PaymentStatus;
 import com.shiro.flashsale.constants.PurchaseStatus;
 import com.shiro.flashsale.constants.ServiceConstants;
 import com.shiro.flashsale.dto.SaleDtos;
@@ -32,7 +32,7 @@ public class PurchaseExecuter {
   private final WarehouseService warehouse;
   private final PaymentService payment;
   private final PurchasePersistenceService purchasePersistence;
-  private final AppProperties properties;
+  private final ReloadConfigService reloadConfigService;
 
   @Transactional
   public SaleDtos.PurchaseResponse execute(UUID userId, FlashSaleItem item, LocalDate saleDate) {
@@ -53,7 +53,7 @@ public class PurchaseExecuter {
   private void preValidate(FlashSaleItem item, UUID userId, LocalDate saleDate) {
     if (purchases.countByCustomerIdAndPurchaseDateAndStatusIsNot(
             userId, saleDate, PurchaseStatus.FAILED)
-        >= properties.getSale().getLimitDailyPurchase()) {
+        >= reloadConfigService.getLimitDailyPurchase()) {
       log.warn(
           "Purchase rejected: daily limit reached, userId={}, itemId={}", userId, item.getId());
       throw ApiException.of(ErrorCode.DAILY_LIMIT_REACHED);
@@ -106,7 +106,7 @@ public class PurchaseExecuter {
       // Commit payment
       PaymentResult confirmed = payment.confirm(purchase.getId());
       // Mark failed purchase as pending if payment failed
-      if (!confirmed.success() || !ServiceConstants.COMPLETE.equals(confirmed.status())) {
+      if (!confirmed.success() || !PaymentStatus.COMPLETE.name().equals(confirmed.status())) {
         releaseReservation(purchase, item, reservationKey);
         throw new PurchaseResponseException(failedResponse(purchase, item, saleDate));
       }
@@ -120,7 +120,7 @@ public class PurchaseExecuter {
           purchase.getId(),
           item.getId(),
           e);
-      throw new PurchaseResponseException(pendingResponse(purchase, item, saleDate));
+      return pendingResponse(purchase, item, saleDate);
     }
     return successResponse(purchase, item, saleDate);
   }

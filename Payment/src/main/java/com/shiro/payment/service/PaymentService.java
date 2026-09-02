@@ -1,7 +1,10 @@
 package com.shiro.payment.service;
 
 import com.shiro.payment.constants.PaymentConstants;
-import com.shiro.payment.domain.*;
+import com.shiro.payment.domain.Account;
+import com.shiro.payment.domain.PaymentTransaction;
+import com.shiro.payment.domain.TransactionStatus;
+import com.shiro.payment.domain.TransactionType;
 import com.shiro.payment.messaging.PaymentDtos;
 import com.shiro.payment.repository.AccountRepository;
 import com.shiro.payment.repository.PaymentTransactionRepository;
@@ -68,6 +71,11 @@ public class PaymentService {
 
   @Transactional
   public PaymentDtos.Response confirm(UUID purchaseId) {
+    try {
+      Thread.sleep(15000);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
     PaymentTransaction transaction = paymentForUpdate(purchaseId);
     if (transaction.getStatus() == TransactionStatus.COMPLETE) {
       return response(transaction, true);

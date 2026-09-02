@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-/** Lazily materialises the {@code (item, sale_date)} quota row before the purchase transaction. */
 @Service
 @RequiredArgsConstructor
 public class FlashSaleQuotaService {

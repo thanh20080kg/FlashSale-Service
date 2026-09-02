@@ -34,7 +34,6 @@ public class FlashSaleItem {
   @Column(nullable = false, precision = 19, scale = 2)
   private BigDecimal amount;
 
-  /** Units released per sale day. */
   @Column(nullable = false)
   private long quantity;
 

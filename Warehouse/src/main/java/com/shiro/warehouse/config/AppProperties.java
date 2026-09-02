@@ -13,11 +13,18 @@ import org.springframework.stereotype.Component;
 public class AppProperties {
   private ZoneId timezone = ZoneId.of("Asia/Ho_Chi_Minh");
   private RabbitQueue rabbitQueue;
+  private StatusSync statusSync = new StatusSync();
 
   @Setter
   @Getter
   public static class RabbitQueue {
     private String inventoryQueue;
     private String statusSyncQueue;
+  }
+
+  @Setter
+  @Getter
+  public static class StatusSync {
+    private int batchSize = 100;
   }
 }

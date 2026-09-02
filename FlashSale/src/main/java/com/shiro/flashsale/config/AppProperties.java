@@ -31,7 +31,6 @@ public class AppProperties {
   @Setter
   @Getter
   public static class Sale {
-    private int limitDailyPurchase;
     private Duration currentItemsCacheTtl = Duration.ofSeconds(2);
   }
 

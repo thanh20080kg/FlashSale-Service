@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.security.core.Authentication;
 
-/** Extracts the caller's user id without controllers having to know how the principal is shaped. */
 public final class CurrentUser {
   private CurrentUser() {}
 

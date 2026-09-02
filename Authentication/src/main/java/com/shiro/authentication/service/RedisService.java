@@ -1,4 +1,4 @@
-package com.shiro.flashsale.service;
+package com.shiro.authentication.service;
 
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
@@ -20,17 +20,5 @@ public class RedisService {
 
   public void set(String key, String value) {
     redisTemplate.opsForValue().set(key, value);
-  }
-
-  public Long increment(String key) {
-    return redisTemplate.opsForValue().increment(key);
-  }
-
-  public Long decrement(String key) {
-    return redisTemplate.opsForValue().decrement(key);
-  }
-
-  public Boolean expire(String key, Duration ttl) {
-    return redisTemplate.expire(key, ttl);
   }
 }
