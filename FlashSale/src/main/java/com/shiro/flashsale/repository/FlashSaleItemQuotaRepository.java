@@ -35,9 +35,12 @@ public interface FlashSaleItemQuotaRepository extends JpaRepository<FlashSaleIte
   @Transactional
   @Query(
       value =
-          "UPDATE flash_sale_item_quotas SET remaining_quantity = remaining_quantity + 1 WHERE flash_sale_item_id = :itemId AND sale_date = :saleDate AND remaining_quantity < total_quantity",
+      "UPDATE flash_sale_item_quotas SET remaining_quantity = remaining_quantity + :quantity WHERE flash_sale_item_id = :itemId AND sale_date = :saleDate AND remaining_quantity + :quantity <= total_quantity",
       nativeQuery = true)
-  int restore(@Param("itemId") String itemId, @Param("saleDate") LocalDate saleDate);
+  int restore(
+      @Param("itemId") String itemId,
+      @Param("quantity") int quantity,
+      @Param("saleDate") LocalDate saleDate);
 
   @Modifying
   @Query(

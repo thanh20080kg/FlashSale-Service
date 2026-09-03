@@ -21,6 +21,11 @@ public class RedisService {
     redisTemplate.opsForValue().set(key, value, ttl);
   }
 
+  /** Stores a value only when the key does not already exist. */
+  public Boolean setIfAbsent(String key, String value, Duration ttl) {
+    return redisTemplate.opsForValue().setIfAbsent(key, value, ttl);
+  }
+
   /** Stores a value without setting an expiration. */
   public void set(String key, String value) {
     redisTemplate.opsForValue().set(key, value);

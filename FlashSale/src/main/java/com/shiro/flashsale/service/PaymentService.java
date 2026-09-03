@@ -30,23 +30,37 @@ public class PaymentService {
   public PaymentDtos.Response pending(
       UUID purchaseId, UUID payerAccountId, UUID payeeAccountId, BigDecimal amount) {
     return send(
-        new PaymentDtos.Request(
-            PaymentDtos.Operation.PENDING, purchaseId, payerAccountId, payeeAccountId, amount));
+        PaymentDtos.Request.builder()
+            .operation(PaymentDtos.Operation.PENDING)
+            .purchaseId(purchaseId)
+            .payerAccountId(payerAccountId)
+            .payeeAccountId(payeeAccountId)
+            .amount(amount)
+            .build());
   }
 
   public PaymentDtos.Response confirm(UUID purchaseId) {
     return send(
-        new PaymentDtos.Request(PaymentDtos.Operation.CONFIRM, purchaseId, null, null, null));
+        PaymentDtos.Request.builder()
+            .operation(PaymentDtos.Operation.CONFIRM)
+            .purchaseId(purchaseId)
+            .build());
   }
 
   public PaymentDtos.Response cancel(UUID purchaseId) {
     return send(
-        new PaymentDtos.Request(PaymentDtos.Operation.CANCEL, purchaseId, null, null, null));
+        PaymentDtos.Request.builder()
+            .operation(PaymentDtos.Operation.CANCEL)
+            .purchaseId(purchaseId)
+            .build());
   }
 
   public PaymentDtos.Response getStatus(UUID purchaseId) {
     return send(
-        new PaymentDtos.Request(PaymentDtos.Operation.STATUS, purchaseId, null, null, null));
+        PaymentDtos.Request.builder()
+            .operation(PaymentDtos.Operation.STATUS)
+            .purchaseId(purchaseId)
+            .build());
   }
 
   private PaymentDtos.Response send(PaymentDtos.Request request) {
@@ -61,9 +75,8 @@ public class PaymentService {
   /** Synchronizes one purchase and its warehouse reservation in a transaction. */
   @Transactional
   public void sync(Purchase purchase) {
-    switch (getStatus(purchase.getId()).status()) {
+    switch (getStatus(purchase.getId()).getStatus()) {
       case COMPLETE -> handleCompletedPayment(purchase);
-      case PENDING -> handlePendingPayment(purchase);
       case FAILED, CANCELLED -> handleFailedPayment(purchase);
     }
   }
@@ -81,14 +94,9 @@ public class PaymentService {
     failPurchaseAndReleaseReservation(purchase);
   }
 
-  private void handlePendingPayment(Purchase purchase) {
-    cancel(purchase.getId());
-    failPurchaseAndReleaseReservation(purchase);
-  }
-
   private void failPurchaseAndReleaseReservation(Purchase purchase) {
     updateStatus(purchase, PurchaseStatus.FAILED);
-    quotas.restore(purchase.getItem().getId().toString(), purchase.getPurchaseDate());
+    quotas.restore(purchase.getItem().getId().toString(), 1, purchase.getPurchaseDate());
     try {
       warehouse.release(purchase.getId(), purchase.getItem().getProduct().getId());
     } catch (RuntimeException exception) {

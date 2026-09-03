@@ -18,13 +18,15 @@ public class KafkaEvenListener {
   private final PurchaseService purchaseService;
   private final PaymentStatusSyncService paymentStatusSyncService;
 
-  @KafkaListener(topics = "${app.kafka-topic.quota-reload-topic}")
-  public void reloadQuotaTrigger(@Payload(required = false) String payload) {
-    log.info("KAFKA_CONSUMER_IN consumer=KafkaEvenListener.reloadQuotaTrigger payload={}", payload);
-    purchaseService.reloadQuota();
-    log.info(
-        "KAFKA_CONSUMER_OUT consumer=KafkaEvenListener.reloadQuotaTrigger result=quota reloaded");
-  }
+  //  @KafkaListener(topics = "${app.kafka-topic.quota-reload-topic}")
+  //  public void reloadQuotaTrigger(@Payload(required = false) String payload) {
+  //    log.info("KAFKA_CONSUMER_IN consumer=KafkaEvenListener.reloadQuotaTrigger payload={}",
+  // payload);
+  //    purchaseService.reloadQuota();
+  //    log.info(
+  //        "KAFKA_CONSUMER_OUT consumer=KafkaEvenListener.reloadQuotaTrigger result=quota
+  // reloaded");
+  //  }
 
   @KafkaListener(topics = "${app.kafka-topic.trigger-reload}")
   public void onReloadConfigTrigger(@Payload(required = false) String payload) {

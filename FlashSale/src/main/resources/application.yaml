@@ -76,13 +76,16 @@ management:
 
 app:
   timezone: ${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   auth:
     token-ttl: 24h
     otp-ttl: 5m
     otp-max-attempts: 5
     registration-ttl: 1h
-  sale:
+  purchase:
     current-items-cache-ttl: ${SALE_LISTING_CACHE_TTL:2s}
+    limit-purchase-cache-ttl: ${SALE_LISTING_CACHE_TTL:2s}
   warehouse:
     queue: ${WAREHOUSE_INVENTORY_QUEUE:warehouse.inventory.commands}
     status-sync-queue: ${WAREHOUSE_STATUS_SYNC_QUEUE:flashsale.purchase-status.sync}
@@ -90,6 +93,7 @@ app:
   payment:
     queue: ${PAYMENT_COMMAND_QUEUE:payment.commands}
     timeout: ${PAYMENT_TIMEOUT:15s}
+    sync-age: ${PAYMENT_SYNC_AGE:5m}
     sync-batch-size: ${PAYMENT_SYNC_BATCH_SIZE:100}
   kafka-topic:
     trigger-reload: ${KAFKA_RELOAD_CONFIG_TOPIC:service.config.reload}

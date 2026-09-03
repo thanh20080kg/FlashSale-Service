@@ -118,7 +118,10 @@ public class PaymentService {
     }
     Instant now = Instant.now();
     if (accounts.release(
-            transaction.getPayerAccount().getId().toString(), transaction.getAmount(), now)
+            ObjectUtils.getIfNull(defaultPayerAccountId, transaction.getPayerAccount().getId())
+                .toString(),
+            transaction.getAmount(),
+            now)
         != 1) {
       throw new PaymentIntegrityException(PaymentConstants.PAYER_RELEASE_FAILED);
     }

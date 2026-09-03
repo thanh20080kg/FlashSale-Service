@@ -26,7 +26,7 @@ public class PurchaseStatusSyncListener {
     PurchaseStatusSyncDtos.Request request =
         objectMapper.readValue(payload, PurchaseStatusSyncDtos.Request.class);
     String response =
-        objectMapper.writeValueAsString(purchaseService.getStatus(request.purchaseIds()));
+        objectMapper.writeValueAsString(purchaseService.getStatus(request.getPurchaseIds()));
 
     log.info(
         "RABBIT_CONSUMER_OUT consumer={} response={}",

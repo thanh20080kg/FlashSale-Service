@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app")
 public class AppProperties {
   private final Auth auth = new Auth();
-  private final Sale sale = new Sale();
+  private final Purchase purchase = new Purchase();
   private final Warehouse warehouse = new Warehouse();
   private final Payment payment = new Payment();
   private final KafkaTopic kafkaTopic = new KafkaTopic();
@@ -30,8 +30,9 @@ public class AppProperties {
 
   @Setter
   @Getter
-  public static class Sale {
+  public static class Purchase {
     private Duration currentItemsCacheTtl = Duration.ofSeconds(2);
+    private Duration limitPurchaseCacheTtl = Duration.ofSeconds(2);
   }
 
   @Setter
@@ -47,6 +48,7 @@ public class AppProperties {
   public static class Payment {
     private String queue;
     private Duration timeout;
+    private Duration syncAge = Duration.ofMinutes(5);
     private int syncBatchSize;
   }
 

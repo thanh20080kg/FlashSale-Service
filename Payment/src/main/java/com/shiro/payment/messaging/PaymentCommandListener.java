@@ -23,16 +23,16 @@ public class PaymentCommandListener {
     try {
       PaymentDtos.Request request = objectMapper.readValue(payload, PaymentDtos.Request.class);
       PaymentDtos.Response response =
-          switch (request.operation()) {
+          switch (request.getOperation()) {
             case PENDING ->
                 service.pending(
-                    request.purchaseId(),
-                    request.payerAccountId(),
-                    request.payeeAccountId(),
-                    request.amount());
-            case CONFIRM -> service.confirm(request.purchaseId());
-            case CANCEL -> service.cancel(request.purchaseId());
-            case STATUS -> service.status(request.purchaseId());
+                    request.getPurchaseId(),
+                    request.getPayerAccountId(),
+                    request.getPayeeAccountId(),
+                    request.getAmount());
+            case CONFIRM -> service.confirm(request.getPurchaseId());
+            case CANCEL -> service.cancel(request.getPurchaseId());
+            case STATUS -> service.status(request.getPurchaseId());
           };
       responsePayload = objectMapper.writeValueAsString(response);
     } catch (Exception exception) {

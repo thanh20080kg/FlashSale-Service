@@ -5,16 +5,18 @@ services:
     restart: unless-stopped
     environment:
       TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
-      MYSQL_DATABASE: flashsale
-      MYSQL_USER: flashsale_admin
-      MYSQL_PASSWORD: P@ssword
-      MYSQL_ROOT_PASSWORD: P@ssword
-      AUTH_DB_PASSWORD: P@ssword
-      NOTIFICATION_DB_PASSWORD: P@ssword
-      FLASHSALE_DB_PASSWORD: P@ssword
-      PAYMENT_DB_PASSWORD: P@ssword
-      WAREHOUSE_DB_PASSWORD: P@ssword
-    command: [ "--default-time-zone=+07:00", "--max-connections=500" ]
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-flashsale}
+      MYSQL_USER: ${MYSQL_USER:-flashsale_admin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-P@ssword}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-P@ssword}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:-P@ssword}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-P@ssword}
+      FLASHSALE_DB_PASSWORD: ${FLASHSALE_DB_PASSWORD:-P@ssword}
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD:-P@ssword}
+      WAREHOUSE_DB_PASSWORD: ${WAREHOUSE_DB_PASSWORD:-P@ssword}
+    command:
+      - "--default-time-zone=${MYSQL_DEFAULT_TIMEZONE_OFFSET:-+07:00}"
+      - "--max-connections=${MYSQL_MAX_CONNECTIONS:-500}"
     ports:
       - "3306:3306"
     volumes:
@@ -121,24 +123,25 @@ services:
     environment:
       TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
-      SERVER_PORT: 8081
-      MYSQL_SCHEMA: authentication
-      MYSQL_HOST: mysql
-      MYSQL_PORT: 3306
-      MYSQL_DATABASE: flashsale
+      SERVER_PORT: ${AUTHENTICATION_PORT:-8081}
+      MYSQL_SCHEMA: ${AUTHENTICATION_SCHEMA:-authentication}
+      MYSQL_HOST: ${MYSQL_HOST:-mysql}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-flashsale}
       MYSQL_USERNAME: authentication_user
-      MYSQL_PASSWORD: P@ssword
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KAFKA_NOTIFICATION_TOPIC: notification.requested
-      KAFKA_RELOAD_CONFIG_TOPIC: service.config.reload
-      JWT_SECRET: 2d7d27dba2c321d04f8b8dbdcdd1f9ef57811db298bc36375f98a169aa102409
-      APP_TIMEZONE: Asia/Ho_Chi_Minh
+      MYSQL_PASSWORD: ${AUTH_DB_PASSWORD:-P@ssword}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_NOTIFICATION_TOPIC: ${KAFKA_NOTIFICATION_TOPIC:-notification.requested}
+      KAFKA_RELOAD_CONFIG_TOPIC: ${KAFKA_RELOAD_CONFIG_TOPIC:-service.config.reload}
+      JWT_SECRET: ${JWT_SECRET:-2d7d27dba2c321d04f8b8dbdcdd1f9ef57811db298bc36375f98a169aa102409}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
     ports:
-      - "8081:8081"
+      - "${AUTHENTICATION_PORT:-8081}:${AUTHENTICATION_PORT:-8081}"
     healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:8081/actuator/health" ]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:${AUTHENTICATION_PORT:-8081}/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -163,29 +166,30 @@ services:
     environment:
       TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
-      MYSQL_SCHEMA: flashsale
-      MYSQL_HOST: mysql
-      MYSQL_PORT: 3306
-      MYSQL_DATABASE: flashsale
+      MYSQL_SCHEMA: ${FLASHSALE_SCHEMA:-flashsale}
+      MYSQL_HOST: ${MYSQL_HOST:-mysql}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-flashsale}
       MYSQL_USERNAME: flashsale_user
-      MYSQL_PASSWORD: P@ssword
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KAFKA_RELOAD_CONFIG_TOPIC: service.config.reload
-      JWT_SECRET: 2d7d27dba2c321d04f8b8dbdcdd1f9ef57811db298bc36375f98a169aa102409
-      APP_TIMEZONE: Asia/Ho_Chi_Minh
+      MYSQL_PASSWORD: ${FLASHSALE_DB_PASSWORD:-P@ssword}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_RELOAD_CONFIG_TOPIC: ${KAFKA_RELOAD_CONFIG_TOPIC:-service.config.reload}
+      JWT_SECRET: ${JWT_SECRET:-2d7d27dba2c321d04f8b8dbdcdd1f9ef57811db298bc36375f98a169aa102409}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
       APP_SEED_DEMO_USERS: "true"
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-flashsale}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-flashsale}
       PAYMENT_COMMAND_QUEUE: payment.commands
       KAFKA_PAYMENT_STATUS_SYNC_TOPIC: payment.status.sync
     ports:
-      - "8080:8080"
+      - "${FLASHSALE_PORT:-8080}:${FLASHSALE_PORT:-8080}"
     healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/actuator/health" ]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:${FLASHSALE_PORT:-8080}/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -208,23 +212,23 @@ services:
     environment:
       TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
-      SERVER_PORT: 8082
-      MYSQL_SCHEMA: notification
-      MYSQL_HOST: mysql
-      MYSQL_PORT: 3306
-      MYSQL_DATABASE: flashsale
+      SERVER_PORT: ${NOTIFICATION_PORT:-8082}
+      MYSQL_SCHEMA: ${NOTIFICATION_SCHEMA:-notification}
+      MYSQL_HOST: ${MYSQL_HOST:-mysql}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-flashsale}
       MYSQL_USERNAME: notification_user
-      MYSQL_PASSWORD: P@ssword
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KAFKA_NOTIFICATION_TOPIC: notification.requested
-      KAFKA_NOTIFICATION_GROUP_ID: notification-service
-      APP_TIMEZONE: Asia/Ho_Chi_Minh
+      MYSQL_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-P@ssword}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_NOTIFICATION_TOPIC: ${KAFKA_NOTIFICATION_TOPIC:-notification.requested}
+      KAFKA_NOTIFICATION_GROUP_ID: ${NOTIFICATION_GROUP_ID:-notification-service}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
     ports:
-      - "8082:8082"
+      - "${NOTIFICATION_PORT:-8082}:${NOTIFICATION_PORT:-8082}"
     healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:8082/actuator/health" ]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:${NOTIFICATION_PORT:-8082}/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -243,20 +247,21 @@ services:
     environment:
       TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
-      MYSQL_SCHEMA: payment
-      MYSQL_HOST: mysql
-      MYSQL_PORT: 3306
+      SERVER_PORT: ${PAYMENT_PORT:-8083}
+      MYSQL_SCHEMA: ${PAYMENT_SCHEMA:-payment}
+      MYSQL_HOST: ${MYSQL_HOST:-mysql}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
       MYSQL_USERNAME: payment_user
-      MYSQL_PASSWORD: P@ssword
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
+      MYSQL_PASSWORD: ${PAYMENT_DB_PASSWORD:-P@ssword}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-flashsale}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-flashsale}
       PAYMENT_COMMAND_QUEUE: payment.commands
     ports:
-      - "8083:8083"
+      - "${PAYMENT_PORT:-8083}:${PAYMENT_PORT:-8083}"
     healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:8083/actuator/health" ]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:${PAYMENT_PORT:-8083}/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -275,22 +280,22 @@ services:
     environment:
       TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
-      SERVER_PORT: 8084
-      MYSQL_HOST: mysql
-      MYSQL_PORT: 3306
-      MYSQL_DATABASE: warehouse
+      SERVER_PORT: ${WAREHOUSE_PORT:-8084}
+      MYSQL_HOST: ${MYSQL_HOST:-mysql}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      MYSQL_DATABASE: ${WAREHOUSE_DATABASE:-warehouse}
       MYSQL_USERNAME: warehouse_user
       MYSQL_PASSWORD: ${WAREHOUSE_DB_PASSWORD:-P@ssword}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       KAFKA_NOTIFICATION_GROUP_ID: warehouse-status
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-flashsale}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-flashsale}
     ports:
-      - "8084:8084"
+      - "${WAREHOUSE_PORT:-8084}:${WAREHOUSE_PORT:-8084}"
     healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:8084/actuator/health" ]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:${WAREHOUSE_PORT:-8084}/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -307,12 +312,12 @@ services:
     environment:
       TZ: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
       JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
-      SERVER_PORT: 8086
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KAFKA_PAYMENT_STATUS_SYNC_TOPIC: payment.status.sync
-      APP_TIMEZONE: Asia/Ho_Chi_Minh
+      SERVER_PORT: ${SCHEDULER_PORT:-8086}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_PAYMENT_STATUS_SYNC_TOPIC: ${KAFKA_PAYMENT_STATUS_SYNC_TOPIC:-payment.status.sync}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
     ports:
-      - "8086:8086"
+      - "${SCHEDULER_PORT:-8086}:${SCHEDULER_PORT:-8086}"
 
 volumes:
   mysql_data:

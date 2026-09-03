@@ -1,5 +1,6 @@
 package com.shiro.warehouse.config;
 
+import java.time.Duration;
 import java.time.ZoneId;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,5 +27,6 @@ public class AppProperties {
   @Getter
   public static class StatusSync {
     private int batchSize = 100;
+    private Duration syncAge = Duration.ofMinutes(5);
   }
 }

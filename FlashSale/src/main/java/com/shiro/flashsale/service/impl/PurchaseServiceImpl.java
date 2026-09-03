@@ -12,7 +12,6 @@ import com.shiro.flashsale.exception.PurchaseResponseException;
 import com.shiro.flashsale.repository.FlashSaleItemQuotaRepository;
 import com.shiro.flashsale.repository.FlashSaleItemRepository;
 import com.shiro.flashsale.repository.PurchaseRepository;
-import com.shiro.flashsale.service.CacheConfigService;
 import com.shiro.flashsale.service.PurchaseExecuter;
 import com.shiro.flashsale.service.PurchaseService;
 import com.shiro.flashsale.service.RedisService;
@@ -48,7 +47,6 @@ public class PurchaseServiceImpl implements PurchaseService {
   private final FlashSaleQuotaService quotaService;
   private final PurchaseExecuter executor;
   private final RedisService redisService;
-  private final CacheConfigService cacheConfigService;
   private final ObjectMapper objectMapper;
   private final AppProperties properties;
 
@@ -73,25 +71,25 @@ public class PurchaseServiceImpl implements PurchaseService {
   public SaleDtos.PurchaseResponse purchase(UUID userId, SaleDtos.PurchaseRequest request) {
     LocalDate today = LocalDate.now();
     LocalTime now = LocalTime.now();
-    String dailyLimitKey = RedisKeyConstants.DAILY_LIMIT + today + ":" + userId;
-    String itemQuotaKey = RedisKeyConstants.ITEM_QUOTA + today + ":" + request.itemId();
+    String itemQuotasKey = RedisKeyConstants.ITEM_QUOTA + today + ":" + request.getItemId();
     // Default quantity is 1
     var quantity =
-        ObjectUtils.isEmpty(request.quantity())
+        ObjectUtils.isEmpty(request.getQuantity())
             ? 1
-            : request.quantity() > 0 ? request.quantity() : 1;
-
-    validatePrePurchase(dailyLimitKey, itemQuotaKey, quantity);
+            : request.getQuantity() > 0 ? request.getQuantity() : 1;
+    // Consume Redis quotas
+    Long consumedQuotas = consumeRedisQuotas(itemQuotasKey, quantity);
     try {
+      validatePrePurchase(consumedQuotas);
       FlashSaleItem item =
           items
-              .findActiveById(request.itemId(), today, now)
+              .findActiveById(request.getItemId(), today, now)
               .orElseThrow(() -> ApiException.of(ErrorCode.SALE_NOT_ACTIVE));
       return executor.execute(userId, item, quantity, today);
     } catch (RuntimeException failure) {
       log.error(
-          "Purchase execution failed, userId={}, itemId={}", userId, request.itemId(), failure);
-      rollBackRedis(dailyLimitKey, itemQuotaKey, quantity);
+          "Purchase execution failed, userId={}, itemId={}", userId, request.getItemId(), failure);
+      rollBackRedisQuotas(itemQuotasKey, quantity);
       if (failure instanceof PurchaseResponseException responseException) {
         return (SaleDtos.PurchaseResponse) responseException.getObject();
       }
@@ -123,22 +121,9 @@ public class PurchaseServiceImpl implements PurchaseService {
             });
   }
 
-  private void validatePrePurchase(String dailyLimitKey, String itemQuotaKey, int quantity) {
-    try {
-      Long purchaseCount = dailyPurchaseCount(dailyLimitKey, quantity);
-      Long consumeQuota = consumeItemsQuota(itemQuotaKey, quantity);
-      if (purchaseCount > cacheConfigService.getLimitDailyPurchase()) {
-        throw ApiException.of(ErrorCode.DAILY_LIMIT_REACHED);
-      }
-      if (consumeQuota < 0L) {
-        throw ApiException.of(ErrorCode.SOLD_OUT);
-      }
-    } catch (Exception e) {
-      rollBackRedis(dailyLimitKey, itemQuotaKey, quantity);
-      if (e instanceof ApiException apiException) {
-        throw apiException;
-      }
-      throw ApiException.of(ErrorCode.INTERNAL_ERROR);
+  private void validatePrePurchase(Long consumeQuota) {
+    if (consumeQuota < 0L) {
+      throw ApiException.of(ErrorCode.SOLD_OUT);
     }
   }
 
@@ -149,15 +134,16 @@ public class PurchaseServiceImpl implements PurchaseService {
     return purchases.findHistory(userId, PageRequest.of(0, pageSize)).stream()
         .map(
             p ->
-                new SaleDtos.PurchaseHistoryResponse(
-                    p.getId(),
-                    p.getItem().getId(),
-                    p.getItem().getProduct().getSku(),
-                    p.getItem().getProduct().getName(),
-                    p.getAmount(),
-                    p.getPurchaseDate(),
-                    p.getStatus().name(),
-                    p.getCreatedAt()))
+                SaleDtos.PurchaseHistoryResponse.builder()
+                    .purchaseId(p.getId())
+                    .itemId(p.getItem().getId())
+                    .sku(p.getItem().getProduct().getSku())
+                    .productName(p.getItem().getProduct().getName())
+                    .amount(p.getAmount())
+                    .purchaseDate(p.getPurchaseDate())
+                    .status(p.getStatus().name())
+                    .createdAt(p.getCreatedAt())
+                    .build())
         .toList();
   }
 
@@ -169,7 +155,7 @@ public class PurchaseServiceImpl implements PurchaseService {
     }
     List<PurchaseStatusSyncDtos.Entry> entries =
         purchases.findAllById(purchaseIds).stream()
-            .map(p -> new PurchaseStatusSyncDtos.Entry(p.getId(), p.getStatus().name()))
+            .map(p -> new PurchaseStatusSyncDtos.Entry(p.getStatus().name(), p.getId()))
             .toList();
     return new PurchaseStatusSyncDtos.Response(entries);
   }
@@ -193,20 +179,21 @@ public class PurchaseServiceImpl implements PurchaseService {
     return active.stream()
         .map(
             i ->
-                new SaleDtos.SaleItemResponse(
-                    i.getId(),
-                    i.getProduct().getId(),
-                    i.getProduct().getSku(),
-                    i.getProduct().getName(),
-                    i.getAmount(),
-                    i.getQuantity(),
+                SaleDtos.SaleItemResponse.builder()
+                    .itemId(i.getId())
+                    .productId(i.getProduct().getId())
+                    .sku(i.getProduct().getSku())
+                    .productName(i.getProduct().getName())
+                    .amount(i.getAmount())
+                    .quantity(i.getQuantity())
                     // No quota row yet means nobody has bought today: the full allowance is open.
-                    remaining.getOrDefault(i.getId(), i.getQuantity()),
-                    i.getSlot().getId(),
-                    i.getSlot().getName(),
-                    i.getSlot().getStartTime(),
-                    i.getSlot().getEndTime(),
-                    i.getSlot().isOvernight()))
+                    .remainingQuantity(remaining.getOrDefault(i.getId(), i.getQuantity()))
+                    .slotId(i.getSlot().getId())
+                    .slotName(i.getSlot().getName())
+                    .startTime(i.getSlot().getStartTime())
+                    .endTime(i.getSlot().getEndTime())
+                    .overnight(i.getSlot().isOvernight())
+                    .build())
         .toList();
   }
 
@@ -229,7 +216,7 @@ public class PurchaseServiceImpl implements PurchaseService {
       redisService.set(
           key,
           objectMapper.writeValueAsString(value),
-          properties.getSale().getCurrentItemsCacheTtl());
+          properties.getPurchase().getCurrentItemsCacheTtl());
     } catch (Exception ex) {
       log.debug("Flash sale listing cache write failed", ex);
     }
@@ -244,20 +231,11 @@ public class PurchaseServiceImpl implements PurchaseService {
     return Duration.between(now, nextMidnight.toInstant());
   }
 
-  private Long dailyPurchaseCount(String key, int quantity) {
-    Long count = redisService.increment(key, quantity);
-    if (count == quantity) {
-      redisService.expire(key, ttlUntilNextMidnight(Instant.now()));
-    }
-    return count;
-  }
-
-  private Long consumeItemsQuota(String key, int quantity) {
+  private Long consumeRedisQuotas(String key, int quantity) {
     return redisService.decrement(key, quantity);
   }
 
-  private void rollBackRedis(String dailyLimitKey, String itemQuotaKey, int quantity) {
-    redisService.decrement(dailyLimitKey, quantity);
-    redisService.increment(itemQuotaKey, quantity);
+  private Long rollBackRedisQuotas(String itemQuotaKey, int quantity) {
+    return redisService.increment(itemQuotaKey, quantity);
   }
 }

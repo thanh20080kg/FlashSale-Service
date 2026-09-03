@@ -39,10 +39,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
   private static String ruleFor(HttpServletRequest request) {
     String path = request.getRequestURI();
     return ROUTES.stream()
-        .filter(
-            route ->
-                ObjectUtils.equals(route.method(), request.getMethod())
-                    && ObjectUtils.equals(route.path(), path))
+        .filter(route -> route.method().equals(request.getMethod()) && route.path().equals(path))
         .findFirst()
         .map(Route::rule)
         .orElseGet(() -> null);

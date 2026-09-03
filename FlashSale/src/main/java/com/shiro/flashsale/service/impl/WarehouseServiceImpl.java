@@ -28,10 +28,10 @@ public class WarehouseServiceImpl implements WarehouseService {
         send(
             new WarehouseDtos.Request(
                 WarehouseDtos.Operation.RESERVE, reservationKey, productId, quantity));
-    if (response.success() || ALREADY_RESERVED.equals(response.status())) {
+    if (response.isSuccess() || ALREADY_RESERVED.equals(response.getStatus())) {
       return response;
     }
-    switch (response.status()) {
+    switch (response.getStatus()) {
       case ALREADY_SOLD -> throw ApiException.of(ErrorCode.INVALID_REQUEST);
       case OUT_OF_STOCK -> throw ApiException.of(ErrorCode.OUT_OF_STOCK);
       case NOT_EXIST -> throw ApiException.of(ErrorCode.PRODUCT_NOT_FOUND);
@@ -45,10 +45,10 @@ public class WarehouseServiceImpl implements WarehouseService {
         send(
             new WarehouseDtos.Request(
                 WarehouseDtos.Operation.CONFIRM, reservationKey, productId, null));
-    if (response.success() || ALREADY_SOLD.equals(response.status())) {
+    if (response.isSuccess() || ALREADY_SOLD.equals(response.getStatus())) {
       return response;
     }
-    switch (response.status()) {
+    switch (response.getStatus()) {
       case RELEASED -> throw ApiException.of(ErrorCode.INVALID_REQUEST);
       case NOT_EXIST -> throw ApiException.of(ErrorCode.PRODUCT_NOT_FOUND);
       default -> throw ApiException.of(ErrorCode.INTERNAL_ERROR);
@@ -61,10 +61,10 @@ public class WarehouseServiceImpl implements WarehouseService {
         send(
             new WarehouseDtos.Request(
                 WarehouseDtos.Operation.RELEASE, reservationKey, productId, null));
-    if (response.success() || ALREADY_RELEASED.equals(response.status())) {
+    if (response.isSuccess() || ALREADY_RELEASED.equals(response.getStatus())) {
       return response;
     }
-    switch (response.status()) {
+    switch (response.getStatus()) {
       case SOLD -> throw ApiException.of(ErrorCode.INVALID_REQUEST);
       case NOT_EXIST -> throw ApiException.of(ErrorCode.PRODUCT_NOT_FOUND);
       default -> throw ApiException.of(ErrorCode.INTERNAL_ERROR);
@@ -77,7 +77,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     } catch (ApiException exception) {
       throw exception;
     } catch (Exception exception) {
-      log.error("Warehouse communication failed, operation={}", request.operation(), exception);
+      log.error("Warehouse communication failed, operation={}", request.getOperation(), exception);
       throw ApiException.of(ErrorCode.INTERNAL_ERROR);
     }
   }
@@ -91,7 +91,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     } catch (Exception exception) {
       log.error(
           "Warehouse communication failed, operation={}, retry={}",
-          request.operation(),
+          request.getOperation(),
           retry,
           exception);
       throw ApiException.of(ErrorCode.INTERNAL_ERROR);

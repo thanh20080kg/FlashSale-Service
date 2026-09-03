@@ -32,6 +32,7 @@ spring:
 app:
   status-sync:
     batch-size: ${WAREHOUSE_STATUS_SYNC_BATCH_SIZE:100}
+    sync-age: ${WAREHOUSE_STATUS_SYNC_AGE:5m}
   kafka-topic:
     trigger-status-sync: ${KAFKA_WAREHOUSE_STATUS_SYNC_TOPIC:warehouse.purchase-status.sync}
   rabbit-queue:

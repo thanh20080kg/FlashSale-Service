@@ -26,13 +26,13 @@ public class TriggerScheduler {
   private String paymentStatusSyncTopic;
 
   @Scheduled(cron = "${app.scheduler.quota-reload-cron}", zone = "${app.timezone}")
-  public void reloadQuotaTrigger() {
+  public void onReloadQuotaTrigger() {
     log.info("Publishing quota reload trigger");
     kafkaTriggerProducer.send(quotaReloadTopic);
   }
 
   @Scheduled(cron = "${app.scheduler.status-sync-cron}", zone = "${app.timezone}")
-  public void onSyncTrigger() {
+  public void onStatusSyncTrigger() {
     log.info("Publishing purchase status sync trigger");
     kafkaTriggerProducer.send(statusSyncTopic);
   }

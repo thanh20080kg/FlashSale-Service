@@ -41,6 +41,8 @@ spring:
 
 app:
   timezone: ${APP_TIMEZONE:Asia/Ho_Chi_Minh}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   auth:
     token-ttl: 24h
     otp-ttl: 5m

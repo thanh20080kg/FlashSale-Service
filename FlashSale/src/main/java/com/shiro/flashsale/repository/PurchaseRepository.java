@@ -2,6 +2,7 @@ package com.shiro.flashsale.repository;
 
 import com.shiro.flashsale.constants.PurchaseStatus;
 import com.shiro.flashsale.entity.Purchase;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -23,10 +24,9 @@ public interface PurchaseRepository extends JpaRepository<Purchase, UUID> {
       """)
   List<Purchase> findHistory(@Param("customerId") UUID customerId, Pageable pageable);
 
-  long countByItemIdAndPurchaseDate(UUID itemId, LocalDate purchaseDate);
-
   @EntityGraph(attributePaths = {"item", "item.product"})
-  List<Purchase> findByStatusOrderByCreatedAtAsc(PurchaseStatus status, Pageable pageable);
+  List<Purchase> findByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
+      PurchaseStatus status, Instant createdAt, Pageable pageable);
 
   @Modifying
   @Query(

@@ -2,6 +2,11 @@ package com.shiro.payment.dto;
 
 import java.math.BigDecimal;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 public final class PaymentDtos {
   private PaymentDtos() {}
@@ -13,13 +18,27 @@ public final class PaymentDtos {
     STATUS
   }
 
-  public record Request(
-      Operation operation,
-      UUID purchaseId,
-      UUID payerAccountId,
-      UUID payeeAccountId,
-      BigDecimal amount) {}
+  @Getter
+  @Setter
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class Request {
+    private Operation operation;
+    private UUID purchaseId;
+    private UUID payerAccountId;
+    private UUID payeeAccountId;
+    private BigDecimal amount;
+  }
 
-  public record Response(
-      boolean success, UUID purchaseId, UUID transactionId, String status, String message) {}
+  @Getter
+  @Builder
+  @AllArgsConstructor
+  public static class Response {
+    private final boolean success;
+    private final UUID purchaseId;
+    private final UUID transactionId;
+    private final String status;
+    private final String message;
+  }
 }

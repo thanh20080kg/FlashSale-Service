@@ -1,6 +1,11 @@
 package com.shiro.flashsale.dto.client;
 
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 public final class WarehouseDtos {
   private WarehouseDtos() {}
@@ -38,9 +43,26 @@ public final class WarehouseDtos {
     }
   }
 
-  public record Request(
-      Operation operation, UUID reservationKey, UUID productId, Integer quantity) {}
+  @Getter
+  @Setter
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class Request {
+    private Operation operation;
+    private UUID reservationKey;
+    private UUID productId;
+    private Integer quantity;
+  }
 
-  public record Response(
-      boolean success, Status status, String message, UUID productId, Integer quantity) {}
+  @Getter
+  @Builder
+  @AllArgsConstructor
+  public static class Response {
+    private final boolean success;
+    private final Status status;
+    private final String message;
+    private final UUID productId;
+    private final Integer quantity;
+  }
 }

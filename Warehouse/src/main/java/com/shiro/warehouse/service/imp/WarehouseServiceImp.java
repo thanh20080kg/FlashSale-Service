@@ -13,6 +13,7 @@ import com.shiro.warehouse.repository.InventoryRepository;
 import com.shiro.warehouse.repository.InventoryReservationRepository;
 import com.shiro.warehouse.service.WarehouseService;
 import jakarta.transaction.Transactional;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,9 +40,9 @@ public class WarehouseServiceImp implements WarehouseService {
   /** Reserves inventory for a purchase, preserving idempotency by reservation key. */
   @Transactional
   public WarehouseDtos.Response reserve(WarehouseDtos.Request request) {
-    UUID productId = request.productId();
-    long quantity = request.quantity();
-    UUID key = request.reservationKey();
+    UUID productId = request.getProductId();
+    long quantity = request.getQuantity();
+    UUID key = request.getReservationKey();
 
     if (quantity <= 0) {
       return responseFailure(INVALID, ServiceConstants.INVALID_QUANTITY_MESSAGE);
@@ -72,7 +73,7 @@ public class WarehouseServiceImp implements WarehouseService {
   /** Releases an active inventory reservation. */
   @Transactional
   public WarehouseDtos.Response release(WarehouseDtos.Request request) {
-    UUID key = request.reservationKey();
+    UUID key = request.getReservationKey();
     InventoryReservation reservation = reservations.findByReservationKey(key).orElse(null);
     if (ObjectUtils.isEmpty(reservation)) {
       return responseFailure(NOT_EXIST);
@@ -98,7 +99,7 @@ public class WarehouseServiceImp implements WarehouseService {
   @Override
   @Transactional
   public WarehouseDtos.Response sold(WarehouseDtos.Request request) {
-    UUID key = request.reservationKey();
+    UUID key = request.getReservationKey();
     InventoryReservation reservation = reservations.findByReservationKey(key).orElse(null);
     if (ObjectUtils.isEmpty(reservation)) {
       return responseFailure(NOT_EXIST);
@@ -125,7 +126,10 @@ public class WarehouseServiceImp implements WarehouseService {
   public void syncPurchaseStatuses() {
     int batchSize = Math.max(1, properties.getStatusSync().getBatchSize());
     List<InventoryReservation> pending =
-        reservations.findByStatusOrderByCreatedAtAsc(RESERVED.name(), PageRequest.of(0, batchSize));
+        reservations.findByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
+            RESERVED.name(),
+            Instant.now().minus(properties.getStatusSync().getSyncAge()),
+            PageRequest.of(0, batchSize));
     Map<UUID, InventoryReservation> byPurchaseId = new LinkedHashMap<>();
     for (InventoryReservation reservation : pending) {
       byPurchaseId.put(reservation.getReservationKey(), reservation);
@@ -136,16 +140,16 @@ public class WarehouseServiceImp implements WarehouseService {
 
     PurchaseStatusSyncDtos.Response response =
         requestStatuses(byPurchaseId.keySet().stream().toList());
-    Optional.ofNullable(response.purchases())
+    Optional.ofNullable(response.getPurchases())
         .orElseGet(Collections::emptyList)
         .forEach(
             entry -> {
-              InventoryReservation reservation = byPurchaseId.get(entry.purchaseId());
+              InventoryReservation reservation = byPurchaseId.get(entry.getPurchaseId());
               if (ObjectUtils.isNotEmpty(reservation)) {
-                if (PurchaseStatus.SUCCESS.equals(entry.status())) {
+                if (PurchaseStatus.SUCCESS.equals(entry.getStatus())) {
                   sold(
                       new WarehouseDtos.Request(null, reservation.getReservationKey(), null, null));
-                } else if (PurchaseStatus.FAILED.equals(entry.status())) {
+                } else if (PurchaseStatus.FAILED.equals(entry.getStatus())) {
                   release(
                       new WarehouseDtos.Request(null, reservation.getReservationKey(), null, null));
                 }

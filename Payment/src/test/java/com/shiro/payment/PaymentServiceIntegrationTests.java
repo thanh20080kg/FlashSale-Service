@@ -25,17 +25,18 @@ class PaymentServiceIntegrationTests {
     BigDecimal amount = new BigDecimal("125000.00");
     UUID purchaseId = UUID.randomUUID();
 
-    assertThat(jdbc.queryForList("SELECT id FROM accounts", String.class)).contains(PAYER.toString(), PAYEE.toString());
+    assertThat(jdbc.queryForList("SELECT id FROM accounts", String.class))
+        .contains(PAYER.toString(), PAYEE.toString());
 
     var pending = paymentService.pending(purchaseId, PAYER, PAYEE, amount);
-    assertThat(pending.success()).as(pending.message()).isTrue();
+    assertThat(pending.isSuccess()).as(pending.getMessage()).isTrue();
     assertThat(accounts.findById(PAYER).orElseThrow().getCurrentAmount())
         .isEqualByComparingTo("100000000.00");
     assertThat(accounts.findById(PAYER).orElseThrow().getAvailableAmount())
         .isEqualByComparingTo("99875000.00");
 
     var complete = paymentService.confirm(purchaseId);
-    assertThat(complete.success()).isTrue();
+    assertThat(complete.isSuccess()).isTrue();
     assertThat(accounts.findById(PAYER).orElseThrow().getCurrentAmount())
         .isEqualByComparingTo("99875000.00");
     assertThat(accounts.findById(PAYEE).orElseThrow().getCurrentAmount())

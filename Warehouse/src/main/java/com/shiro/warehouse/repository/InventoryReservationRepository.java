@@ -1,6 +1,7 @@
 package com.shiro.warehouse.repository;
 
 import com.shiro.warehouse.entity.InventoryReservation;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,7 +14,8 @@ import org.springframework.data.repository.query.Param;
 public interface InventoryReservationRepository extends JpaRepository<InventoryReservation, UUID> {
   Optional<InventoryReservation> findByReservationKey(UUID reservationKey);
 
-  List<InventoryReservation> findByStatusOrderByCreatedAtAsc(String status, Pageable pageable);
+  List<InventoryReservation> findByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
+      String status, Instant createdAt, Pageable pageable);
 
   @Modifying
   @Query(

@@ -15,64 +15,22 @@ databaseChangeLog:
               CREATE INDEX idx_purchase_status_created ON flash_sale_purchases(status, created_at);
               CREATE TABLE app_configuration (config_key varchar(190) not null primary key, config_value varchar(500) not null );
 
-  - changeSet:
-      id: 001-01-seed-products
-      author: flashsale
-      context: "!no-seed"
-      changes:
         - loadData:
             tableName: products
             file: db/changelog/data/products.csv
             separator: ","
-            columns:
-              - column: { name: id, type: STRING }
-              - column: { name: owner_id, type: STRING }
-              - column: { name: sku, type: STRING }
-              - column: { name: name, type: STRING }
-              - column: { name: active, type: BOOLEAN }
 
-  - changeSet:
-      id: 001-02-seed-slots
-      author: flashsale
-      context: "!no-seed"
-      changes:
         - loadData:
             tableName: flash_sale_slots
             file: db/changelog/data/flash_sale_slots.csv
             separator: ","
-            columns:
-              - column: { name: id, type: STRING }
-              - column: { name: name, type: STRING }
-              - column: { name: start_time, type: STRING }
-              - column: { name: end_time, type: STRING }
-              - column: { name: active, type: BOOLEAN }
 
-  - changeSet:
-      id: 001-03-seed-items
-      author: flashsale
-      context: "!no-seed"
-      changes:
         - loadData:
             tableName: flash_sale_items
             file: db/changelog/data/flash_sale_items.csv
             separator: ","
-            columns:
-              - column: { name: id, type: STRING }
-              - column: { name: slot_id, type: STRING }
-              - column: { name: product_id, type: STRING }
-              - column: { name: amount, type: NUMERIC }
-              - column: { name: quantity, type: NUMERIC }
-              - column: { name: active, type: BOOLEAN }
 
-  - changeSet:
-      id: 001-04-seed-configuration
-      author: flashsale
-      context: "!no-seed"
-      changes:
         - loadData:
             tableName: app_configuration
             file: db/changelog/data/app_configuration.csv
             separator: ","
-            columns:
-              - column: { name: config_key, type: STRING }
-              - column: { name: config_value, type: STRING }

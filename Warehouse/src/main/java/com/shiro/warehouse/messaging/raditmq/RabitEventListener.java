@@ -32,7 +32,7 @@ public class RabitEventListener {
           payload);
       WarehouseDtos.Request command = objectMapper.readValue(payload, WarehouseDtos.Request.class);
       WarehouseDtos.Response result =
-          switch (command.operation()) {
+          switch (command.getOperation()) {
             case RESERVE -> service.reserve(command);
             case RELEASE -> service.release(command);
             case CONFIRM -> service.sold(command);

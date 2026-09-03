@@ -35,17 +35,17 @@ public class NotificationConsumer {
   public void consume(String payload) throws Exception {
     log.info("KAFKA_CONSUMER_IN consumer=NotificationConsumer.consume payload={}", payload);
     NotificationMessage message = objectMapper.readValue(payload, NotificationMessage.class);
-    NotificationType type = NotificationType.valueOf(message.type());
-    TemplateData template = template(message.templateCode());
+    NotificationType type = NotificationType.valueOf(message.getType());
+    TemplateData template = template(message.getTemplateCode());
     if (!type.equals(template.type())) {
       throw new IllegalArgumentException(NotificationConstants.TYPE_MISMATCH);
     }
-    String content = render(template.content(), message.params());
+    String content = render(template.content(), message.getParams());
     log.info(
         "KAFKA_CONSUMER_OUT consumer=NotificationConsumer.consume type={} to={} template={} content={}",
         type,
-        message.recipient(),
-        message.templateCode(),
+        message.getRecipient(),
+        message.getTemplateCode(),
         content);
   }
 

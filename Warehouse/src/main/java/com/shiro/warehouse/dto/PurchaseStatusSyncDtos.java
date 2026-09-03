@@ -3,13 +3,36 @@ package com.shiro.warehouse.dto;
 import com.shiro.warehouse.constants.PurchaseStatus;
 import java.util.List;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 public final class PurchaseStatusSyncDtos {
   private PurchaseStatusSyncDtos() {}
 
-  public record Request(List<UUID> purchaseIds) {}
+  @Getter
+  @Setter
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class Request {
+    private List<UUID> purchaseIds;
+  }
 
-  public record Entry(UUID purchaseId, PurchaseStatus status) {}
+  @Getter
+  @Builder
+  @AllArgsConstructor
+  public static class Entry {
+    private final PurchaseStatus status;
+    private UUID purchaseId;
+  }
 
-  public record Response(List<Entry> purchases) {}
+  @Getter
+  @Builder
+  @AllArgsConstructor
+  public static class Response {
+    private List<Entry> purchases;
+  }
 }

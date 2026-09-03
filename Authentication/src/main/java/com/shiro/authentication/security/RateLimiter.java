@@ -1,5 +1,7 @@
 package com.shiro.authentication.security;
 
+import static com.shiro.authentication.constants.RedisKeyConstants.*;
+
 import com.shiro.authentication.config.AppProperties;
 import com.shiro.authentication.exception.ApiException;
 import com.shiro.authentication.exception.ErrorCode;
@@ -18,7 +20,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RateLimiter {
   private static final Logger log = LoggerFactory.getLogger(RateLimiter.class);
-  private static final String PREFIX = "rl:";
 
   private final StringRedisTemplate redis;
   private final AppProperties properties;
@@ -42,7 +43,7 @@ public class RateLimiter {
       return;
     }
 
-    String key = PREFIX + ruleName + ":" + hash(subject);
+    String key = RATE_LIMIT_PREFIX + ruleName + ":" + hash(subject);
     try {
       Long count = redis.opsForValue().increment(key);
       if (ObjectUtils.isEmpty(count)) {

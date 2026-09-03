@@ -7,7 +7,14 @@ databaseChangeLog:
             sql: |
               CREATE TABLE inventories (id VARCHAR(36) NOT NULL PRIMARY KEY, product_id VARCHAR(36) NOT NULL UNIQUE, available_quantity BIGINT NOT NULL DEFAULT 0, sold_quantity BIGINT NOT NULL DEFAULT 0);
               CREATE TABLE inventory_reservations (id VARCHAR(36) NOT NULL PRIMARY KEY, reservation_key VARCHAR(190) NOT NULL UNIQUE, product_id VARCHAR(36) NOT NULL, quantity BIGINT NOT NULL DEFAULT 1, status VARCHAR(20) NOT NULL, created_at DATETIME NOT NULL);
+              CREATE TABLE products (id VARCHAR(36) NOT NULL PRIMARY KEY, owner_id VARCHAR(36) NULL, sku VARCHAR(64) NOT NULL UNIQUE, name VARCHAR(200) NOT NULL, active BOOLEAN NOT NULL);
+
         - loadData:
             file: db/changelog/data/inventories.csv
             tableName: inventories
+            separator: ","
+
+        - loadData:
+            tableName: products
+            file: db/changelog/data/products.csv
             separator: ","

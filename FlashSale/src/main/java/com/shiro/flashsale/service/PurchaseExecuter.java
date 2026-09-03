@@ -33,6 +33,8 @@ public class PurchaseExecuter {
   private final PaymentService payment;
   private final PurchasePersistenceService purchasePersistence;
   private final CacheConfigService cacheConfigService;
+  private final RedisService redisService;
+  private final com.shiro.flashsale.config.AppProperties properties;
 
   @Transactional
   public SaleDtos.PurchaseResponse execute(
@@ -48,7 +50,7 @@ public class PurchaseExecuter {
     UUID reservationKey = purchase.getId();
 
     reserveProcess(purchase, item, userId, reservationKey, quantity, saleDate);
-    return confirmProcess(purchase, item, reservationKey, saleDate);
+    return confirmProcess(purchase, item, reservationKey, quantity, saleDate);
   }
 
   private void preValidate(FlashSaleItem item, UUID userId, LocalDate saleDate) {
@@ -69,28 +71,55 @@ public class PurchaseExecuter {
       UUID reservationKey,
       Integer quantity,
       LocalDate saleDate) {
+    checkAndConsumeQuota(purchase, item, quantity, saleDate);
+    PaymentDtos.Response pending = createPendingPayment(purchase, item, userId);
+    updateStatusAndReserveWarehouse(purchase, item, pending, reservationKey, quantity);
+  }
 
-    PaymentDtos.Response pending;
+  /** Uses Redis as a fast quota guard and the database as the source of truth. */
+  private void checkAndConsumeQuota(
+      Purchase purchase, FlashSaleItem item, Integer quantity, LocalDate saleDate) {
+    var consumedQuotas = quotas.decrement(item.getId().toString(), quantity, saleDate);
+    if (consumedQuotas == 0) {
+      log.warn(
+          "Purchase rejected: item sold out, purchaseId={}, itemId={}",
+          purchase.getId(),
+          item.getId());
+      throw ApiException.of(ErrorCode.SOLD_OUT);
+    }
+  }
+
+  /** Requests a payment hold for the purchase. */
+  private PaymentDtos.Response createPendingPayment(
+      Purchase purchase, FlashSaleItem item, UUID userId) {
     try {
-      // Send payment pending request
-      pending =
+      PaymentDtos.Response pending =
           payment.pending(
               purchase.getId(), userId, item.getProduct().getOwnerId(), item.getAmount());
-      if (!pending.success() || !PaymentDtos.PaymentStatus.PENDING.equals(pending.status())) {
-        // Failed to update purchase status after payment pending rejection
+      if (!pending.isSuccess() || !PaymentDtos.PaymentStatus.PENDING.equals(pending.getStatus())) {
         purchasePersistence.updateStatus(purchase.getId(), PurchaseStatus.FAILED);
         log.warn("Purchase rejected during payment pending, purchaseId={}", purchase.getId());
         throw ApiException.of(ErrorCode.PAYMENT_FAILED);
       }
+      return pending;
     } catch (ApiException e) {
       throw e;
     } catch (Exception e) {
       log.error("Failed to send payment pending request, purchaseId={}", purchase.getId(), e);
       throw ApiException.of(ErrorCode.PAYMENT_FAILED);
     }
+  }
 
+  /** Persists the payment transaction and reserves the product in Warehouse. */
+  private void updateStatusAndReserveWarehouse(
+      Purchase purchase,
+      FlashSaleItem item,
+      PaymentDtos.Response pending,
+      UUID reservationKey,
+      Integer quantity) {
     try {
-      initReservation(purchase, item, pending, reservationKey, quantity, saleDate);
+      purchasePersistence.paymentPending(purchase.getId(), pending.getTransactionId());
+      warehouse.reserve(item.getProduct().getId(), reservationKey, quantity);
     } catch (Exception failure) {
       log.error(
           "Reservation process failed, purchaseId={}, itemId={}",
@@ -103,11 +132,16 @@ public class PurchaseExecuter {
   }
 
   private SaleDtos.PurchaseResponse confirmProcess(
-      Purchase purchase, FlashSaleItem item, UUID reservationKey, LocalDate saleDate) {
+      Purchase purchase,
+      FlashSaleItem item,
+      UUID reservationKey,
+      Integer quantity,
+      LocalDate saleDate) {
     try {
       // Confirm payment
       PaymentDtos.Response confirmed = payment.confirm(purchase.getId());
-      if (!confirmed.success() || !PaymentDtos.PaymentStatus.COMPLETE.equals(confirmed.status())) {
+      if (!confirmed.isSuccess()
+          || !PaymentDtos.PaymentStatus.COMPLETE.equals(confirmed.getStatus())) {
         // Mark failed if payment failed, throw error to roll back
         releaseReservation(purchase, item, reservationKey);
         throw new PurchaseResponseException(failedResponse(purchase, item, saleDate));
@@ -126,24 +160,6 @@ public class PurchaseExecuter {
       return pendingResponse(purchase, item, saleDate);
     }
     return successResponse(purchase, item, saleDate);
-  }
-
-  private void initReservation(
-      Purchase purchase,
-      FlashSaleItem item,
-      PaymentDtos.Response pending,
-      UUID reservationKey,
-      Integer quantity,
-      LocalDate saleDate) {
-    purchasePersistence.paymentPending(purchase.getId(), pending.transactionId());
-    warehouse.reserve(item.getProduct().getId(), reservationKey, quantity);
-    if (quotas.decrement(item.getId().toString(), 1, saleDate) == 0) {
-      log.warn(
-          "Purchase rejected: item sold out, purchaseId={}, itemId={}",
-          purchase.getId(),
-          item.getId());
-      throw ApiException.of(ErrorCode.SOLD_OUT);
-    }
   }
 
   private void releaseReservation(Purchase purchase, FlashSaleItem item, UUID reservationKey) {
@@ -193,13 +209,14 @@ public class PurchaseExecuter {
       LocalDate saleDate,
       PurchaseStatus status,
       String message) {
-    return new SaleDtos.PurchaseResponse(
-        purchase.getId(),
-        item.getId(),
-        item.getProduct().getSku(),
-        item.getAmount(),
-        saleDate,
-        status.name(),
-        message);
+    return SaleDtos.PurchaseResponse.builder()
+        .purchaseId(purchase.getId())
+        .itemId(item.getId())
+        .sku(item.getProduct().getSku())
+        .amount(item.getAmount())
+        .purchaseDate(saleDate)
+        .status(status.name())
+        .message(message)
+        .build();
   }
 }
