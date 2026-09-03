@@ -1,6 +1,8 @@
 package com.shiro.payment.repository;
 
 import com.shiro.payment.domain.Account;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -27,8 +29,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
       nativeQuery = true)
   int hold(
       @Param("accountId") String accountId,
-      @Param("amount") java.math.BigDecimal amount,
-      @Param("updatedAt") java.time.Instant updatedAt);
+      @Param("amount") BigDecimal amount,
+      @Param("updatedAt") Instant updatedAt);
 
   @Modifying(flushAutomatically = true)
   @Query(
@@ -44,8 +46,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
       nativeQuery = true)
   int capture(
       @Param("accountId") String accountId,
-      @Param("amount") java.math.BigDecimal amount,
-      @Param("updatedAt") java.time.Instant updatedAt);
+      @Param("amount") BigDecimal amount,
+      @Param("updatedAt") Instant updatedAt);
 
   @Modifying(flushAutomatically = true)
   @Query(
@@ -60,8 +62,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
       nativeQuery = true)
   int credit(
       @Param("accountId") String accountId,
-      @Param("amount") java.math.BigDecimal amount,
-      @Param("updatedAt") java.time.Instant updatedAt);
+      @Param("amount") BigDecimal amount,
+      @Param("updatedAt") Instant updatedAt);
 
   @Modifying(flushAutomatically = true)
   @Query(
@@ -76,6 +78,6 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
       nativeQuery = true)
   int release(
       @Param("accountId") String accountId,
-      @Param("amount") java.math.BigDecimal amount,
-      @Param("updatedAt") java.time.Instant updatedAt);
+      @Param("amount") BigDecimal amount,
+      @Param("updatedAt") Instant updatedAt);
 }

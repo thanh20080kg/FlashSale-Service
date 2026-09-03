@@ -3,6 +3,7 @@ package com.shiro.payment.repository;
 import com.shiro.payment.domain.PaymentTransaction;
 import com.shiro.payment.domain.TransactionType;
 import jakarta.persistence.LockModeType;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,5 +33,5 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
       @Param("transactionId") String transactionId,
       @Param("expectedStatus") String expectedStatus,
       @Param("newStatus") String newStatus,
-      @Param("updatedAt") java.time.Instant updatedAt);
+      @Param("updatedAt") Instant updatedAt);
 }

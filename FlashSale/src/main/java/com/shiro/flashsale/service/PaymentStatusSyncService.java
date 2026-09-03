@@ -4,6 +4,7 @@ import com.shiro.flashsale.config.AppProperties;
 import com.shiro.flashsale.constants.PaymentStatus;
 import com.shiro.flashsale.constants.PurchaseStatus;
 import com.shiro.flashsale.entity.Purchase;
+import com.shiro.flashsale.repository.FlashSaleItemQuotaRepository;
 import com.shiro.flashsale.repository.PurchaseRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ public class PaymentStatusSyncService {
   private final PurchasePersistenceService persistence;
   private final PaymentService payment;
   private final WarehouseService warehouse;
-  private final com.shiro.flashsale.repository.FlashSaleItemQuotaRepository quotas;
+  private final FlashSaleItemQuotaRepository quotas;
   private final AppProperties properties;
 
   public void syncPending() {

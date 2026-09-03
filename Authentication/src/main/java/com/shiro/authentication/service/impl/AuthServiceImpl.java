@@ -90,51 +90,15 @@ public class AuthServiceImpl implements AuthService {
     validateIdentifier(identifier);
 
     rateLimiter.consume("auth-otp-identifier", identifier);
-    Map<Object, Object> pending = redis.opsForHash().entries(registrationKey(identifier));
-    if (pending.isEmpty()) {
-      throw new AuthException(ErrorCode.REGISTRATION_EXPIRED);
-    }
-    if (!ObjectUtils.equals(identifier, String.valueOf(pending.get(Constant.IDENTIFIER)))) {
-      throw new AuthException(ErrorCode.REGISTRATION_INVALID);
-    }
+    Map<Object, Object> pending = loadPendingRegistration(identifier);
+    validatePendingRegistration(identifier, pending);
 
-    OtpChallenge challenge =
-        otps.findTopByIdentifierAndPurposeAndConsumedFalseOrderByExpiresAtDesc(
-                identifier, OtpPurpose.REGISTER)
-            .orElseThrow(() -> new AuthException(ErrorCode.OTP_INVALID));
+    OtpChallenge challenge = findRegistrationOtp(identifier);
+    validateOtp(request.getOtp(), challenge);
 
-    if (challenge.getAttempts() >= properties.getAuth().getOtpMaxAttempts()) {
-      throw new AuthException(ErrorCode.OTP_ATTEMPTS_EXCEEDED);
-    }
-    if (challenge.getExpiresAt().isBefore(Instant.now())
-        || !MessageDigest.isEqual(
-            hashOtp(request.getOtp()).getBytes(StandardCharsets.UTF_8),
-            challenge.getCodeHash().getBytes(StandardCharsets.UTF_8))) {
-      otps.incrementAttempts(challenge.getId().toString());
-      throw new OtpInvalidException();
-    }
-
-    AuthChannel channel;
-    try {
-      channel = AuthChannel.valueOf(String.valueOf(pending.get(Constant.CHANNEL)));
-    } catch (IllegalArgumentException | NullPointerException exception) {
-      throw new AuthException(ErrorCode.REGISTRATION_INVALID);
-    }
-
-    User user = new User(channel, identifier, String.valueOf(pending.get(Constant.PASSWORD_HASH)));
-    user.verify();
-    try {
-      if (otps.consume(challenge.getId().toString()) != 1) {
-        throw new AuthException(ErrorCode.OTP_INVALID);
-      }
-      users.saveAndFlush(user);
-    } catch (DataIntegrityViolationException concurrentVerification) {
-      // Two verify calls raced; the unique index on identifier settled it.
-      throw new AuthException(ErrorCode.IDENTIFIER_ALREADY_REGISTERED);
-    }
-    customers.save(
-        new Customer(
-            user, String.valueOf(pending.getOrDefault(Constant.DISPLAY_NAME, "")), Instant.now()));
+    User user = createUser(identifier, pending);
+    saveVerifiedUser(user, challenge);
+    customers.save(createCustomer(user, pending));
     redis.delete(registrationKey(identifier));
     return issueAccessToken(user);
   }
@@ -247,16 +211,6 @@ public class AuthServiceImpl implements AuthService {
     return null;
   }
 
-  private void validateIdentifier(String identifier) {
-    if (ObjectUtils.isEmpty(getChannel(identifier))) {
-      throw new AuthException(ErrorCode.INVALID_IDENTIFIER);
-    }
-  }
-
-  private String sessionKey(String tokenId) {
-    return RedisKeyConstants.AUTH_TOKEN + tokenId;
-  }
-
   private String registrationKey(String identifier) {
     try {
       byte[] digest =
@@ -266,6 +220,102 @@ public class AuthServiceImpl implements AuthService {
     } catch (NoSuchAlgorithmException exception) {
       throw new IllegalStateException("SHA-256 is not available", exception);
     }
+  }
+
+  private void issueOtp(AuthChannel channel, String identifier) {
+    String code = String.format("%06d", random.nextInt(1_000_000));
+
+    if (AuthChannel.EMAIL.equals(channel)) {
+      notifications.sendEmail(
+          NotificationTemplateCode.REGISTER_EMAIL_OTP, identifier, Map.of("otp", code));
+    } else {
+      notifications.sendSms(
+          NotificationTemplateCode.REGISTER_SMS_OTP, identifier, Map.of("otp", code));
+    }
+    otps.save(
+        new OtpChallenge(
+            channel,
+            identifier,
+            OtpPurpose.REGISTER,
+            hashOtp(code),
+            Instant.now().plus(properties.getAuth().getOtpTtl())));
+  }
+
+  private Map<Object, Object> loadPendingRegistration(String identifier) {
+    Map<Object, Object> pending = redis.opsForHash().entries(registrationKey(identifier));
+    if (pending.isEmpty()) {
+      throw new AuthException(ErrorCode.REGISTRATION_EXPIRED);
+    }
+    return pending;
+  }
+
+  private void validatePendingRegistration(String identifier, Map<Object, Object> pending) {
+    if (!ObjectUtils.equals(identifier, String.valueOf(pending.get(Constant.IDENTIFIER)))) {
+      throw new AuthException(ErrorCode.REGISTRATION_INVALID);
+    }
+  }
+
+  private OtpChallenge findRegistrationOtp(String identifier) {
+    return otps.findTopByIdentifierAndPurposeAndConsumedFalseOrderByExpiresAtDesc(
+            identifier, OtpPurpose.REGISTER)
+        .orElseThrow(() -> new AuthException(ErrorCode.OTP_INVALID));
+  }
+
+  private void validateOtp(String otp, OtpChallenge challenge) {
+    if (challenge.getAttempts() >= properties.getAuth().getOtpMaxAttempts()) {
+      throw new AuthException(ErrorCode.OTP_ATTEMPTS_EXCEEDED);
+    }
+    boolean expired = challenge.getExpiresAt().isBefore(Instant.now());
+    boolean codeMatches =
+        MessageDigest.isEqual(
+            hashOtp(otp).getBytes(StandardCharsets.UTF_8),
+            challenge.getCodeHash().getBytes(StandardCharsets.UTF_8));
+    if (expired || !codeMatches) {
+      otps.incrementAttempts(challenge.getId().toString());
+      throw new OtpInvalidException();
+    }
+  }
+
+  private User createUser(String identifier, Map<Object, Object> pending) {
+    AuthChannel channel = getRegistrationChannel(pending);
+    User user = new User(channel, identifier, String.valueOf(pending.get(Constant.PASSWORD_HASH)));
+    user.verify();
+    return user;
+  }
+
+  private AuthChannel getRegistrationChannel(Map<Object, Object> pending) {
+    try {
+      return AuthChannel.valueOf(String.valueOf(pending.get(Constant.CHANNEL)));
+    } catch (IllegalArgumentException | NullPointerException exception) {
+      throw new AuthException(ErrorCode.REGISTRATION_INVALID);
+    }
+  }
+
+  private void saveVerifiedUser(User user, OtpChallenge challenge) {
+    try {
+      if (otps.consume(challenge.getId().toString()) != 1) {
+        throw new AuthException(ErrorCode.OTP_INVALID);
+      }
+      users.saveAndFlush(user);
+    } catch (DataIntegrityViolationException concurrentVerification) {
+      // Two verify calls raced; the unique index on identifier settled it.
+      throw new AuthException(ErrorCode.IDENTIFIER_ALREADY_REGISTERED);
+    }
+  }
+
+  private Customer createCustomer(User user, Map<Object, Object> pending) {
+    return new Customer(
+        user, String.valueOf(pending.getOrDefault(Constant.DISPLAY_NAME, "")), Instant.now());
+  }
+
+  private void validateIdentifier(String identifier) {
+    if (ObjectUtils.isEmpty(getChannel(identifier))) {
+      throw new AuthException(ErrorCode.INVALID_IDENTIFIER);
+    }
+  }
+
+  private String sessionKey(String tokenId) {
+    return RedisKeyConstants.AUTH_TOKEN + tokenId;
   }
 
   private AuthResponse issueAccessToken(User user) {
@@ -291,25 +341,6 @@ public class AuthServiceImpl implements AuthService {
 
     redis.opsForValue().set(sessionKey(tokenId), user.getId().toString(), ttl);
     return new AuthResponse(token, "Bearer", ttl.toSeconds());
-  }
-
-  private void issueOtp(AuthChannel channel, String identifier) {
-    String code = String.format("%06d", random.nextInt(1_000_000));
-
-    if (AuthChannel.EMAIL.equals(channel)) {
-      notifications.sendEmail(
-          NotificationTemplateCode.REGISTER_EMAIL_OTP, identifier, Map.of("otp", code));
-    } else {
-      notifications.sendSms(
-          NotificationTemplateCode.REGISTER_SMS_OTP, identifier, Map.of("otp", code));
-    }
-    otps.save(
-        new OtpChallenge(
-            channel,
-            identifier,
-            OtpPurpose.REGISTER,
-            hashOtp(code),
-            Instant.now().plus(properties.getAuth().getOtpTtl())));
   }
 
   private String hashOtp(String code) {

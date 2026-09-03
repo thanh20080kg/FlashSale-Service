@@ -6,6 +6,7 @@ import com.shiro.notification.constants.NotificationType;
 import com.shiro.notification.dto.NotificationMessage;
 import com.shiro.notification.entity.NotificationTemplate;
 import com.shiro.notification.repository.NotificationTemplateRepository;
+import java.time.Duration;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -63,7 +64,7 @@ public class NotificationConsumer {
                 value.getContent(),
                 NotificationConstants.CACHE_TYPE,
                 value.getType().name()));
-    redis.expire(key, java.time.Duration.ofDays(1));
+    redis.expire(key, Duration.ofDays(1));
     return new TemplateData(value.getContent(), value.getType());
   }
 

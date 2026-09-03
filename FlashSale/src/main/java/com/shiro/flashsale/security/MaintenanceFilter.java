@@ -1,6 +1,6 @@
 package com.shiro.flashsale.security;
 
-import com.shiro.flashsale.service.ReloadConfigService;
+import com.shiro.flashsale.service.CacheConfigService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,40 +28,13 @@ public class MaintenanceFilter extends OncePerRequestFilter {
       List.of(
           new Route("GET", "/api/v1/flash-sales/current", "MAINTENANCE_FLASH_SALES_CURRENT"),
           new Route("POST", "/api/v1/flash-sales/purchase", "MAINTENANCE_FLASH_SALES_PURCHASE"),
-          new Route("GET", "/api/v1/me/balance", "MAINTENANCE_ME_BALANCE"),
-          new Route("GET", "/api/v1/me/purchases", "MAINTENANCE_ME_PURCHASES"),
-          new Route("POST", "/api/v1/admin/products", "MAINTENANCE_ADMIN_PRODUCTS_CREATE"),
-          new Route("GET", "/api/v1/admin/products", "MAINTENANCE_ADMIN_PRODUCTS_LIST"),
-          new Route(
-              "PATCH", "/api/v1/admin/products/{productId}", "MAINTENANCE_ADMIN_PRODUCTS_UPDATE"),
-          new Route(
-              "POST",
-              "/api/v1/admin/products/{productId}/inventory",
-              "MAINTENANCE_ADMIN_INVENTORY_ADJUST"),
-          new Route(
-              "GET",
-              "/api/v1/admin/products/{productId}/movements",
-              "MAINTENANCE_ADMIN_INVENTORY_MOVEMENTS"),
-          new Route("POST", "/api/v1/admin/slots", "MAINTENANCE_ADMIN_SLOTS_CREATE"),
-          new Route("GET", "/api/v1/admin/slots", "MAINTENANCE_ADMIN_SLOTS_LIST"),
-          new Route("PATCH", "/api/v1/admin/slots/{slotId}", "MAINTENANCE_ADMIN_SLOTS_UPDATE"),
-          new Route("POST", "/api/v1/admin/slots/{slotId}/items", "MAINTENANCE_ADMIN_ITEMS_CREATE"),
-          new Route("GET", "/api/v1/admin/items", "MAINTENANCE_ADMIN_ITEMS_LIST"),
-          new Route("PATCH", "/api/v1/admin/items/{itemId}", "MAINTENANCE_ADMIN_ITEMS_UPDATE"),
-          new Route(
-              "POST",
-              "/api/v1/admin/customers/{userId}/balance",
-              "MAINTENANCE_ADMIN_CUSTOMER_TOP_UP"),
-          new Route(
-              "GET",
-              "/api/v1/admin/inventory-sync/status",
-              "MAINTENANCE_ADMIN_INVENTORY_SYNC_STATUS"));
+          new Route("GET", "/api/v1/me/purchases", "MAINTENANCE_ME_PURCHASES"));
 
-  private final ReloadConfigService reloadConfigService;
+  private final CacheConfigService cacheConfigService;
   private final ObjectMapper objectMapper;
 
-  public MaintenanceFilter(ReloadConfigService reloadConfigService, ObjectMapper objectMapper) {
-    this.reloadConfigService = reloadConfigService;
+  public MaintenanceFilter(CacheConfigService cacheConfigService, ObjectMapper objectMapper) {
+    this.cacheConfigService = cacheConfigService;
     this.objectMapper = objectMapper;
   }
 
@@ -84,7 +57,7 @@ public class MaintenanceFilter extends OncePerRequestFilter {
       return;
     }
     Route route = routeFor(request);
-    if (reloadConfigService.isMaintenance(ObjectUtils.isEmpty(route) ? null : route.configKey())) {
+    if (cacheConfigService.isMaintenance(ObjectUtils.isEmpty(route) ? null : route.configKey())) {
       writeMaintenanceResponse(response);
       return;
     }

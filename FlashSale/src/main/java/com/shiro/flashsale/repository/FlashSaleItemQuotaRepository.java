@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface FlashSaleItemQuotaRepository extends JpaRepository<FlashSaleItemQuota, UUID> {
 
@@ -31,7 +32,7 @@ public interface FlashSaleItemQuotaRepository extends JpaRepository<FlashSaleIte
       @Param("saleDate") LocalDate saleDate);
 
   @Modifying
-  @org.springframework.transaction.annotation.Transactional
+  @Transactional
   @Query(
       value =
           "UPDATE flash_sale_item_quotas SET remaining_quantity = remaining_quantity + 1 WHERE flash_sale_item_id = :itemId AND sale_date = :saleDate AND remaining_quantity < total_quantity",

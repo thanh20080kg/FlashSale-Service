@@ -1,6 +1,6 @@
 package com.shiro.authentication.security;
 
-import com.shiro.authentication.service.ReloadConfigService;
+import com.shiro.authentication.service.CacheConfigService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,7 +33,7 @@ public class MaintenanceFilter extends OncePerRequestFilter {
           new Route("POST", "/api/v1/auth/login", "MAINTENANCE_AUTH_LOGIN"),
           new Route("POST", "/api/v1/auth/logout", "MAINTENANCE_AUTH_LOGOUT"));
 
-  private final ReloadConfigService maintenanceConfig;
+  private final CacheConfigService maintenanceConfig;
   private final ObjectMapper objectMapper;
 
   private static Route routeFor(HttpServletRequest request) {

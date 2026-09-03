@@ -32,7 +32,7 @@ public class PurchaseExecuter {
   private final WarehouseService warehouse;
   private final PaymentService payment;
   private final PurchasePersistenceService purchasePersistence;
-  private final ReloadConfigService reloadConfigService;
+  private final CacheConfigService cacheConfigService;
 
   @Transactional
   public SaleDtos.PurchaseResponse execute(UUID userId, FlashSaleItem item, LocalDate saleDate) {
@@ -53,7 +53,7 @@ public class PurchaseExecuter {
   private void preValidate(FlashSaleItem item, UUID userId, LocalDate saleDate) {
     if (purchases.countByCustomerIdAndPurchaseDateAndStatusIsNot(
             userId, saleDate, PurchaseStatus.FAILED)
-        >= reloadConfigService.getLimitDailyPurchase()) {
+        >= cacheConfigService.getLimitDailyPurchase()) {
       log.warn(
           "Purchase rejected: daily limit reached, userId={}, itemId={}", userId, item.getId());
       throw ApiException.of(ErrorCode.DAILY_LIMIT_REACHED);

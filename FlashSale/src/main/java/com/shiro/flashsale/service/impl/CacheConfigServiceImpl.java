@@ -1,10 +1,10 @@
-package com.shiro.authentication.service.impl;
+package com.shiro.flashsale.service.impl;
 
-import com.shiro.authentication.constants.RedisKeyConstants;
-import com.shiro.authentication.entity.AppConfiguration;
-import com.shiro.authentication.repository.AppConfigurationRepository;
-import com.shiro.authentication.service.RedisService;
-import com.shiro.authentication.service.ReloadConfigService;
+import com.shiro.flashsale.constants.RedisKeyConstants;
+import com.shiro.flashsale.entity.AppConfiguration;
+import com.shiro.flashsale.repository.AppConfigurationRepository;
+import com.shiro.flashsale.service.CacheConfigService;
+import com.shiro.flashsale.service.RedisService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class ReloadConfigServiceImpl implements ReloadConfigService {
+public class CacheConfigServiceImpl implements CacheConfigService {
   private static final String ALL_APIS_KEY = "MAINTENANCE_ALL";
   private static final String DAILY_PURCHASE_LIMIT_KEY = "SALE_LIMIT_DAILY_PURCHASE";
 
@@ -28,8 +28,8 @@ public class ReloadConfigServiceImpl implements ReloadConfigService {
     return Boolean.parseBoolean(value);
   }
 
-  @Override
   @EventListener(ApplicationReadyEvent.class)
+  @Override
   public void reload() {
     Map<String, String> loaded = new HashMap<>();
     List<AppConfiguration> appConfigurations = configurationsRepository.findAll();
@@ -47,6 +47,17 @@ public class ReloadConfigServiceImpl implements ReloadConfigService {
       return true;
     }
     return ObjectUtils.isNotEmpty(configKey) && isOn(getConfiguration(configKey));
+  }
+
+  @Override
+  public int getLimitDailyPurchase() {
+    String value = getConfiguration(DAILY_PURCHASE_LIMIT_KEY);
+    try {
+      return Integer.parseInt(value);
+    } catch (NumberFormatException exception) {
+      throw new IllegalStateException(
+          "Invalid configuration value for " + DAILY_PURCHASE_LIMIT_KEY + ": " + value, exception);
+    }
   }
 
   private String getConfiguration(String key) {

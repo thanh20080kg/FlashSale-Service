@@ -1,6 +1,7 @@
 package com.shiro.flashsale.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import java.nio.charset.StandardCharsets;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +18,7 @@ public class JwtConfiguration {
   @Bean
   SecretKey jwtSecretKey(
       @Value("${spring.security.oauth2.resourceserver.jwt.secret-key}") String secret) {
-    byte[] key = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    byte[] key = secret.getBytes(StandardCharsets.UTF_8);
     if (key.length < 32) {
       throw new IllegalStateException("JWT_SECRET must contain at least 32 bytes");
     }

@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -52,7 +53,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             permissions.forEach(p -> authorities.add(new SimpleGrantedAuthority("PERM_" + p)));
           }
           AuthenticatedPrincipal principal =
-              new AuthenticatedPrincipal(java.util.UUID.fromString(userId), tokenId, authorities);
+              new AuthenticatedPrincipal(UUID.fromString(userId), tokenId, authorities);
           SecurityContextHolder.getContext()
               .setAuthentication(
                   UsernamePasswordAuthenticationToken.authenticated(principal, null, authorities));
