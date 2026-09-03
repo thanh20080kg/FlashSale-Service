@@ -1,14 +1,13 @@
 package com.shiro.warehouse.service;
 
-import com.shiro.warehouse.dto.WarehouseRequest;
-import com.shiro.warehouse.dto.WarehouseResponse;
+import com.shiro.warehouse.dto.WarehouseDtos;
 
 public interface WarehouseService {
-  WarehouseResponse reserve(WarehouseRequest command);
+  WarehouseDtos.Response reserve(WarehouseDtos.Request command);
 
-  WarehouseResponse release(WarehouseRequest command);
+  WarehouseDtos.Response release(WarehouseDtos.Request command);
 
-  WarehouseResponse sold(WarehouseRequest command);
+  WarehouseDtos.Response sold(WarehouseDtos.Request command);
 
   void syncPurchaseStatuses();
 }

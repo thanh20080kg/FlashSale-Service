@@ -1,11 +1,11 @@
 package com.shiro.payment.service;
 
 import com.shiro.payment.constants.PaymentConstants;
-import com.shiro.payment.domain.Account;
-import com.shiro.payment.domain.PaymentTransaction;
-import com.shiro.payment.domain.TransactionStatus;
-import com.shiro.payment.domain.TransactionType;
-import com.shiro.payment.messaging.PaymentDtos;
+import com.shiro.payment.constants.TransactionStatus;
+import com.shiro.payment.constants.TransactionType;
+import com.shiro.payment.dto.PaymentDtos;
+import com.shiro.payment.entity.Account;
+import com.shiro.payment.entity.PaymentTransaction;
 import com.shiro.payment.repository.AccountRepository;
 import com.shiro.payment.repository.PaymentTransactionRepository;
 import java.math.BigDecimal;
@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Coordinates payment holds, captures, cancellations, and status queries. */
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
@@ -29,6 +30,7 @@ public class PaymentService {
   @Value("${app.payment.default-accounts.payee-id}")
   private UUID defaultPayeeAccountId;
 
+  /** Places a payment hold after validating the accounts and requested amount. */
   @Transactional
   public PaymentDtos.Response pending(
       UUID purchaseId, UUID payerAccountId, UUID payeeAccountId, BigDecimal amount) {
@@ -69,13 +71,9 @@ public class PaymentService {
     return response(transaction, true);
   }
 
+  /** Captures a pending payment and credits the payee account. */
   @Transactional
   public PaymentDtos.Response confirm(UUID purchaseId) {
-    try {
-      Thread.sleep(15000);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
     PaymentTransaction transaction = paymentForUpdate(purchaseId);
     if (transaction.getStatus() == TransactionStatus.COMPLETE) {
       return response(transaction, true);
@@ -105,6 +103,7 @@ public class PaymentService {
     return response(transaction, TransactionStatus.COMPLETE, true);
   }
 
+  /** Releases a pending payment hold and marks the transaction as cancelled. */
   @Transactional
   public PaymentDtos.Response cancel(UUID purchaseId) {
     PaymentTransaction transaction = paymentForUpdate(purchaseId);
@@ -123,7 +122,6 @@ public class PaymentService {
         != 1) {
       throw new PaymentIntegrityException(PaymentConstants.PAYER_RELEASE_FAILED);
     }
-    Account account = transaction.getPayerAccount();
     if (transactions.updateStatus(
             transaction.getId().toString(),
             TransactionStatus.PENDING.name(),
@@ -135,6 +133,7 @@ public class PaymentService {
     return response(transaction, TransactionStatus.CANCELLED, true);
   }
 
+  /** Returns the current payment status for a purchase. */
   @Transactional(readOnly = true)
   public PaymentDtos.Response status(UUID purchaseId) {
     return transactions

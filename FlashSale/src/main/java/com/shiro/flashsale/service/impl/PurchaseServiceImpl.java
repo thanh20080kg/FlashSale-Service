@@ -2,6 +2,7 @@ package com.shiro.flashsale.service.impl;
 
 import com.shiro.flashsale.config.AppProperties;
 import com.shiro.flashsale.constants.RedisKeyConstants;
+import com.shiro.flashsale.dto.PurchaseStatusSyncDtos;
 import com.shiro.flashsale.dto.SaleDtos;
 import com.shiro.flashsale.entity.FlashSaleItem;
 import com.shiro.flashsale.entity.FlashSaleItemQuota;
@@ -13,10 +14,13 @@ import com.shiro.flashsale.repository.FlashSaleItemRepository;
 import com.shiro.flashsale.repository.PurchaseRepository;
 import com.shiro.flashsale.service.CacheConfigService;
 import com.shiro.flashsale.service.PurchaseExecuter;
+import com.shiro.flashsale.service.PurchaseService;
 import com.shiro.flashsale.service.RedisService;
-import com.shiro.flashsale.service.SaleService;
-import java.time.*;
-import java.util.Date;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,16 +29,19 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+/** Provides flash-sale catalogue, purchase, quota, and history operations. */
 @Service
 @RequiredArgsConstructor
-public class SaleServiceImpl implements SaleService {
-  private static final Logger log = LoggerFactory.getLogger(SaleServiceImpl.class);
+public class PurchaseServiceImpl implements PurchaseService {
+  private static final Logger log = LoggerFactory.getLogger(PurchaseServiceImpl.class);
   private final FlashSaleItemRepository items;
   private final FlashSaleItemQuotaRepository quotas;
   private final PurchaseRepository purchases;
@@ -68,32 +75,37 @@ public class SaleServiceImpl implements SaleService {
     LocalTime now = LocalTime.now();
     String dailyLimitKey = RedisKeyConstants.DAILY_LIMIT + today + ":" + userId;
     String itemQuotaKey = RedisKeyConstants.ITEM_QUOTA + today + ":" + request.itemId();
+    // Default quantity is 1
+    var quantity =
+        ObjectUtils.isEmpty(request.quantity())
+            ? 1
+            : request.quantity() > 0 ? request.quantity() : 1;
 
-    validatePrePurchase(dailyLimitKey, itemQuotaKey);
+    validatePrePurchase(dailyLimitKey, itemQuotaKey, quantity);
     try {
       FlashSaleItem item =
           items
               .findActiveById(request.itemId(), today, now)
               .orElseThrow(() -> ApiException.of(ErrorCode.SALE_NOT_ACTIVE));
-      return executor.execute(userId, item, today);
-    } catch (PurchaseResponseException responseException) {
-      return (SaleDtos.PurchaseResponse) responseException.getObject();
+      return executor.execute(userId, item, quantity, today);
     } catch (RuntimeException failure) {
       log.error(
           "Purchase execution failed, userId={}, itemId={}", userId, request.itemId(), failure);
-      rollbackDailyLimit(dailyLimitKey);
-      refundQuota(itemQuotaKey);
+      rollBackRedis(dailyLimitKey, itemQuotaKey, quantity);
+      if (failure instanceof PurchaseResponseException responseException) {
+        return (SaleDtos.PurchaseResponse) responseException.getObject();
+      }
       throw failure;
     }
   }
 
+  @EventListener(ApplicationReadyEvent.class)
   @Override
   public void reloadQuota() {
     ZonedDateTime current = ZonedDateTime.now(properties.getTimezone());
     LocalDate saleDate = current.toLocalDate();
     LocalTime saleTime = current.toLocalTime();
 
-    Date currentDateTime = new Date();
     items
         .findCurrent(saleDate, saleTime)
         .forEach(
@@ -111,18 +123,22 @@ public class SaleServiceImpl implements SaleService {
             });
   }
 
-  private void validatePrePurchase(String dailyLimitKey, String itemQuotaKey) {
-    Long purchaseCount = dailyPurchaseCount(dailyLimitKey);
-    Long consumeQuota = consumeQuota(itemQuotaKey);
-    if (purchaseCount > cacheConfigService.getLimitDailyPurchase()) {
-      rollbackDailyLimit(dailyLimitKey);
-      refundQuota(itemQuotaKey);
-      throw ApiException.of(ErrorCode.DAILY_LIMIT_REACHED);
-    }
-    if (consumeQuota < 0L) {
-      rollbackDailyLimit(dailyLimitKey);
-      refundQuota(itemQuotaKey);
-      throw ApiException.of(ErrorCode.SOLD_OUT);
+  private void validatePrePurchase(String dailyLimitKey, String itemQuotaKey, int quantity) {
+    try {
+      Long purchaseCount = dailyPurchaseCount(dailyLimitKey, quantity);
+      Long consumeQuota = consumeItemsQuota(itemQuotaKey, quantity);
+      if (purchaseCount > cacheConfigService.getLimitDailyPurchase()) {
+        throw ApiException.of(ErrorCode.DAILY_LIMIT_REACHED);
+      }
+      if (consumeQuota < 0L) {
+        throw ApiException.of(ErrorCode.SOLD_OUT);
+      }
+    } catch (Exception e) {
+      rollBackRedis(dailyLimitKey, itemQuotaKey, quantity);
+      if (e instanceof ApiException apiException) {
+        throw apiException;
+      }
+      throw ApiException.of(ErrorCode.INTERNAL_ERROR);
     }
   }
 
@@ -143,6 +159,19 @@ public class SaleServiceImpl implements SaleService {
                     p.getStatus().name(),
                     p.getCreatedAt()))
         .toList();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public PurchaseStatusSyncDtos.Response getStatus(List<UUID> purchaseIds) {
+    if (purchaseIds == null || purchaseIds.isEmpty()) {
+      return new PurchaseStatusSyncDtos.Response(List.of());
+    }
+    List<PurchaseStatusSyncDtos.Entry> entries =
+        purchases.findAllById(purchaseIds).stream()
+            .map(p -> new PurchaseStatusSyncDtos.Entry(p.getId(), p.getStatus().name()))
+            .toList();
+    return new PurchaseStatusSyncDtos.Response(entries);
   }
 
   private List<SaleDtos.SaleItemResponse> loadCurrentItems(LocalDate today, LocalTime now) {
@@ -215,23 +244,20 @@ public class SaleServiceImpl implements SaleService {
     return Duration.between(now, nextMidnight.toInstant());
   }
 
-  private Long dailyPurchaseCount(String key) {
-    Long count = redisService.increment(key);
-    if (count == 1L) {
+  private Long dailyPurchaseCount(String key, int quantity) {
+    Long count = redisService.increment(key, quantity);
+    if (count == quantity) {
       redisService.expire(key, ttlUntilNextMidnight(Instant.now()));
     }
     return count;
   }
 
-  private void rollbackDailyLimit(String key) {
-    redisService.decrement(key);
+  private Long consumeItemsQuota(String key, int quantity) {
+    return redisService.decrement(key, quantity);
   }
 
-  private Long consumeQuota(String key) {
-    return redisService.decrement(key);
-  }
-
-  private void refundQuota(String key) {
-    redisService.increment(key);
+  private void rollBackRedis(String dailyLimitKey, String itemQuotaKey, int quantity) {
+    redisService.decrement(dailyLimitKey, quantity);
+    redisService.increment(itemQuotaKey, quantity);
   }
 }

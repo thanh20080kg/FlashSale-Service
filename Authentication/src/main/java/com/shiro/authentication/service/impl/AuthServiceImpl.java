@@ -43,6 +43,7 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Implements registration, OTP verification, login, and token session management. */
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -60,6 +61,7 @@ public class AuthServiceImpl implements AuthService {
   private final AppProperties properties;
   private final SecureRandom random = new SecureRandom();
 
+  /** Stores a pending registration and sends the registration OTP. */
   @Override
   @Transactional
   public void register(RegisterRequest request) {
@@ -83,6 +85,7 @@ public class AuthServiceImpl implements AuthService {
     issueOtp(channel, identifier);
   }
 
+  /** Verifies the registration OTP, creates the user, and issues an access token. */
   @Override
   @Transactional(noRollbackFor = OtpInvalidException.class)
   public AuthResponse verifyOtp(VerifyOtpRequest request) {
@@ -103,6 +106,7 @@ public class AuthServiceImpl implements AuthService {
     return issueAccessToken(user);
   }
 
+  /** Authenticates a verified user with the supplied password. */
   @Override
   public AuthResponse login(LoginRequest request) {
     String identifier = normalizeIdentifier(request.getIdentifier());
@@ -125,6 +129,7 @@ public class AuthServiceImpl implements AuthService {
     return issueAccessToken(user);
   }
 
+  /** Revokes the session represented by a valid access token. */
   @Override
   public void logout(String token) {
     if (ObjectUtils.isEmpty(token) || token.isBlank()) {
@@ -141,6 +146,7 @@ public class AuthServiceImpl implements AuthService {
     }
   }
 
+  /** Resolves a token to an authenticated principal when its server-side session is active. */
   @Override
   public Optional<AuthenticatedPrincipal> authenticate(String token) {
     if (ObjectUtils.isEmpty(token) || token.isBlank()) {
@@ -176,6 +182,7 @@ public class AuthServiceImpl implements AuthService {
     }
   }
 
+  /** Trims and canonicalizes an email address or phone number. */
   public String normalizeIdentifier(String value) {
     if (ObjectUtils.isEmpty(value)) {
       return value;
@@ -201,6 +208,7 @@ public class AuthServiceImpl implements AuthService {
     return normalized;
   }
 
+  /** Determines whether an identifier belongs to the email or phone channel. */
   public AuthChannel getChannel(String value) {
     if (EMAIL.matcher(value).matches()) {
       return AuthChannel.EMAIL;
@@ -211,6 +219,7 @@ public class AuthServiceImpl implements AuthService {
     return null;
   }
 
+  /** Builds a hashed Redis key for temporary registration data. */
   private String registrationKey(String identifier) {
     try {
       byte[] digest =
@@ -222,6 +231,7 @@ public class AuthServiceImpl implements AuthService {
     }
   }
 
+  /** Generates, delivers, and stores a hashed registration OTP. */
   private void issueOtp(AuthChannel channel, String identifier) {
     String code = String.format("%06d", random.nextInt(1_000_000));
 
@@ -241,6 +251,7 @@ public class AuthServiceImpl implements AuthService {
             Instant.now().plus(properties.getAuth().getOtpTtl())));
   }
 
+  /** Loads the short-lived registration data from Redis. */
   private Map<Object, Object> loadPendingRegistration(String identifier) {
     Map<Object, Object> pending = redis.opsForHash().entries(registrationKey(identifier));
     if (pending.isEmpty()) {
@@ -249,18 +260,21 @@ public class AuthServiceImpl implements AuthService {
     return pending;
   }
 
+  /** Ensures the pending registration belongs to the requested identifier. */
   private void validatePendingRegistration(String identifier, Map<Object, Object> pending) {
     if (!ObjectUtils.equals(identifier, String.valueOf(pending.get(Constant.IDENTIFIER)))) {
       throw new AuthException(ErrorCode.REGISTRATION_INVALID);
     }
   }
 
+  /** Finds the newest unconsumed registration OTP for the identifier. */
   private OtpChallenge findRegistrationOtp(String identifier) {
     return otps.findTopByIdentifierAndPurposeAndConsumedFalseOrderByExpiresAtDesc(
             identifier, OtpPurpose.REGISTER)
         .orElseThrow(() -> new AuthException(ErrorCode.OTP_INVALID));
   }
 
+  /** Validates the OTP and records an attempt when it is expired or incorrect. */
   private void validateOtp(String otp, OtpChallenge challenge) {
     if (challenge.getAttempts() >= properties.getAuth().getOtpMaxAttempts()) {
       throw new AuthException(ErrorCode.OTP_ATTEMPTS_EXCEEDED);
@@ -276,6 +290,7 @@ public class AuthServiceImpl implements AuthService {
     }
   }
 
+  /** Builds a verified user from the pending registration data. */
   private User createUser(String identifier, Map<Object, Object> pending) {
     AuthChannel channel = getRegistrationChannel(pending);
     User user = new User(channel, identifier, String.valueOf(pending.get(Constant.PASSWORD_HASH)));
@@ -283,6 +298,7 @@ public class AuthServiceImpl implements AuthService {
     return user;
   }
 
+  /** Reads and validates the registration channel stored in Redis. */
   private AuthChannel getRegistrationChannel(Map<Object, Object> pending) {
     try {
       return AuthChannel.valueOf(String.valueOf(pending.get(Constant.CHANNEL)));
@@ -291,6 +307,7 @@ public class AuthServiceImpl implements AuthService {
     }
   }
 
+  /** Atomically consumes the OTP and persists the new user. */
   private void saveVerifiedUser(User user, OtpChallenge challenge) {
     try {
       if (otps.consume(challenge.getId().toString()) != 1) {
@@ -303,21 +320,25 @@ public class AuthServiceImpl implements AuthService {
     }
   }
 
+  /** Builds the customer profile associated with a newly registered user. */
   private Customer createCustomer(User user, Map<Object, Object> pending) {
     return new Customer(
         user, String.valueOf(pending.getOrDefault(Constant.DISPLAY_NAME, "")), Instant.now());
   }
 
+  /** Rejects identifiers that do not match a supported authentication channel. */
   private void validateIdentifier(String identifier) {
     if (ObjectUtils.isEmpty(getChannel(identifier))) {
       throw new AuthException(ErrorCode.INVALID_IDENTIFIER);
     }
   }
 
+  /** Builds the Redis key used to store an authenticated session. */
   private String sessionKey(String tokenId) {
     return RedisKeyConstants.AUTH_TOKEN + tokenId;
   }
 
+  /** Creates and stores a signed JWT access token for the user. */
   private AuthResponse issueAccessToken(User user) {
     Duration ttl = properties.getAuth().getTokenTtl();
     Instant issuedAt = Instant.now();
@@ -343,6 +364,7 @@ public class AuthServiceImpl implements AuthService {
     return new AuthResponse(token, "Bearer", ttl.toSeconds());
   }
 
+  /** Returns the SHA-256 hexadecimal representation of an OTP. */
   private String hashOtp(String code) {
     try {
       byte[] digest =

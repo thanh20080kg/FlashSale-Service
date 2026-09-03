@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+/** Ensures that each flash-sale item has a quota row for the requested date. */
 @Service
 @RequiredArgsConstructor
 public class FlashSaleQuotaService {

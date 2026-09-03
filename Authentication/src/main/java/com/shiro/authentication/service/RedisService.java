@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+/** Provides the Redis primitives used by authentication flows. */
 @Service
 @RequiredArgsConstructor
 public class RedisService {

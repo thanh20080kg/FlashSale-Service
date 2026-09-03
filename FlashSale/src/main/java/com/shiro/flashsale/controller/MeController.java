@@ -2,7 +2,7 @@ package com.shiro.flashsale.controller;
 
 import com.shiro.flashsale.dto.SaleDtos;
 import com.shiro.flashsale.security.CurrentUser;
-import com.shiro.flashsale.service.SaleService;
+import com.shiro.flashsale.service.PurchaseService;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/me")
 @AllArgsConstructor
 public class MeController {
-  private final SaleService service;
+  private final PurchaseService service;
 
   @GetMapping("/purchases")
   public List<SaleDtos.PurchaseHistoryResponse> purchases(

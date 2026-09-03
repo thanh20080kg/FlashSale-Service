@@ -18,6 +18,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Consumes notification events, resolves templates, and renders notification content. */
 @Service
 @AllArgsConstructor
 public class NotificationConsumer {
@@ -28,9 +29,11 @@ public class NotificationConsumer {
   private final NotificationTemplateRepository templates;
   private final StringRedisTemplate redis;
 
+  /** Consumes a notification request, resolves its template, and renders the message. */
   @KafkaListener(topics = "${app.kafka.topic}", groupId = "${app.kafka.group-id}")
   @Transactional(readOnly = true)
   public void consume(String payload) throws Exception {
+    log.info("KAFKA_CONSUMER_IN consumer={} payload={}", "NotificationConsumer.consume", payload);
     NotificationMessage message = objectMapper.readValue(payload, NotificationMessage.class);
     NotificationType type = NotificationType.valueOf(message.type());
     TemplateData template = template(message.templateCode());
@@ -39,13 +42,15 @@ public class NotificationConsumer {
     }
     String content = render(template.content(), message.params());
     log.info(
-        "MOCK {} to={} template={} content={}",
+        "KAFKA_CONSUMER_OUT consumer={} type={} to={} template={} content={}",
+        "NotificationConsumer.consume",
         type,
         message.recipient(),
         message.templateCode(),
         content);
   }
 
+  /** Reads a notification template from Redis or loads and caches it from the database. */
   private TemplateData template(String code) {
     String key = CACHE_PREFIX + code;
     Map<Object, Object> cached = redis.opsForHash().entries(key);
@@ -68,6 +73,7 @@ public class NotificationConsumer {
     return new TemplateData(value.getContent(), value.getType());
   }
 
+  /** Replaces template placeholders with request parameters. */
   private String render(String template, Map<String, Object> params) {
     Matcher matcher = PARAMETER.matcher(template);
     StringBuilder output = new StringBuilder();

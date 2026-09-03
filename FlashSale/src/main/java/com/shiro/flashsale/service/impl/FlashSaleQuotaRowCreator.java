@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Creates the daily quota records required by flash-sale items. */
 @Service
 @AllArgsConstructor
 public class FlashSaleQuotaRowCreator {

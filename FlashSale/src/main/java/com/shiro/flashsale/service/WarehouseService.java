@@ -1,12 +1,12 @@
 package com.shiro.flashsale.service;
 
-import com.shiro.flashsale.dto.client.WarehouseResult;
+import com.shiro.flashsale.dto.client.WarehouseDtos;
 import java.util.UUID;
 
 public interface WarehouseService {
-  WarehouseResult reserve(UUID productId, String reservationKey);
+  WarehouseDtos.Response reserve(UUID productId, UUID reservationKey, Integer quantity);
 
-  WarehouseResult sold(UUID productId, String reservationKey);
+  WarehouseDtos.Response sold(UUID productId, UUID reservationKey);
 
-  WarehouseResult release(String reservationKey, UUID productId);
+  WarehouseDtos.Response release(UUID reservationKey, UUID productId);
 }

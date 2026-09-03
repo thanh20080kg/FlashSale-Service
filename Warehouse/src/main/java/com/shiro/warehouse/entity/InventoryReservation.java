@@ -1,6 +1,7 @@
 package com.shiro.warehouse.entity;
 
-import com.shiro.warehouse.constants.OrderStatus;
+import static com.shiro.warehouse.dto.WarehouseDtos.Status.*;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -42,7 +43,7 @@ public class InventoryReservation {
     this.reservationKey = key;
     this.productId = productId;
     this.quantity = quantity;
-    this.status = OrderStatus.RESERVED.name();
+    this.status = RESERVED.name();
     this.createdAt = Instant.now();
   }
 }

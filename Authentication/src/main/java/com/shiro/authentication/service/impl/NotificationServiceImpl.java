@@ -24,16 +24,19 @@ public class NotificationServiceImpl implements NotificationService {
   @Value("${app.kafka.topic.notification}")
   private String topic;
 
+  /** Publishes an email notification request to Kafka. */
   @Override
   public void sendEmail(String templateCode, String recipient, Map<String, ?> params) {
     publish(NotificationChannel.EMAIL.name(), templateCode, recipient, params);
   }
 
+  /** Publishes an SMS notification request to Kafka. */
   @Override
   public void sendSms(String templateCode, String recipient, Map<String, ?> params) {
     publish(NotificationChannel.SMS.name(), templateCode, recipient, params);
   }
 
+  /** Serializes and sends a notification message to the configured Kafka topic. */
   private void publish(String type, String templateCode, String recipient, Map<String, ?> params) {
     try {
       String payload =

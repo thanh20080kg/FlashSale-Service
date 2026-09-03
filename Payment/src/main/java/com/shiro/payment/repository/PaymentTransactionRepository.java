@@ -1,7 +1,7 @@
 package com.shiro.payment.repository;
 
-import com.shiro.payment.domain.PaymentTransaction;
-import com.shiro.payment.domain.TransactionType;
+import com.shiro.payment.constants.TransactionType;
+import com.shiro.payment.entity.PaymentTransaction;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.Optional;

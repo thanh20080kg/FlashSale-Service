@@ -1,4 +1,4 @@
-package com.shiro.payment.domain;
+package com.shiro.payment.constants;
 
 public enum TransactionType {
   PAYMENT,

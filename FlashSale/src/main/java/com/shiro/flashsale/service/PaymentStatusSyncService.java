@@ -1,10 +1,8 @@
 package com.shiro.flashsale.service;
 
 import com.shiro.flashsale.config.AppProperties;
-import com.shiro.flashsale.constants.PaymentStatus;
 import com.shiro.flashsale.constants.PurchaseStatus;
 import com.shiro.flashsale.entity.Purchase;
-import com.shiro.flashsale.repository.FlashSaleItemQuotaRepository;
 import com.shiro.flashsale.repository.PurchaseRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -13,59 +11,27 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+/** Reconciles pending purchases with payment results and warehouse reservations. */
 @Service
 @RequiredArgsConstructor
 public class PaymentStatusSyncService {
   private static final Logger log = LoggerFactory.getLogger(PaymentStatusSyncService.class);
-  private final PurchaseRepository purchases;
-  private final PurchasePersistenceService persistence;
-  private final PaymentService payment;
-  private final WarehouseService warehouse;
-  private final FlashSaleItemQuotaRepository quotas;
   private final AppProperties properties;
+  private final PurchaseRepository purchases;
+  private final PaymentService payment;
 
+  /** Processes the oldest pending purchases within the configured batch size. */
   public void syncPending() {
     List<Purchase> batch =
         purchases.findByStatusOrderByCreatedAtAsc(
             PurchaseStatus.PENDING, PageRequest.of(0, properties.getPayment().getSyncBatchSize()));
-    for (Purchase purchase : batch) sync(purchase);
-  }
-
-  private void sync(Purchase purchase) {
-    try {
-      var status = payment.status(purchase.getId());
-      if (PaymentStatus.COMPLETE.name().equals(status.status())) {
-        persistence.updateStatus(purchase.getId(), PurchaseStatus.SUCCESS);
-        try {
-          warehouse.sold(purchase.getItem().getProduct().getId(), purchase.getId().toString());
-        } catch (RuntimeException exception) {
-          log.warn("Could not finalize warehouse for {}", purchase.getId(), exception);
-        }
-      } else if (PaymentStatus.FAILED.name().equals(status.status())
-          || PaymentStatus.CANCELLED.name().equals(status.status())) {
-        persistence.updateStatus(purchase.getId(), PurchaseStatus.FAILED);
-        restoreQuota(purchase);
-        try {
-          warehouse.release(purchase.getId().toString(), purchase.getItem().getProduct().getId());
-        } catch (RuntimeException exception) {
-          log.warn("Could not release warehouse for {}", purchase.getId(), exception);
-        }
-      } else if (PaymentStatus.PENDING.name().equals(status.status())) {
-        persistence.updateStatus(purchase.getId(), PurchaseStatus.FAILED);
-        restoreQuota(purchase);
-        try {
-          warehouse.release(purchase.getId().toString(), purchase.getItem().getProduct().getId());
-        } catch (RuntimeException exception) {
-          log.warn("Could not release warehouse for {}", purchase.getId(), exception);
-        }
-        payment.cancel(purchase.getId());
+    for (Purchase purchase : batch) {
+      try {
+        payment.sync(purchase);
+      } catch (Exception exception) {
+        log.error(
+            "Failed to sync purchase status for purchase id: {}", purchase.getId(), exception);
       }
-    } catch (RuntimeException exception) {
-      log.warn("Payment status sync failed for purchase {}", purchase.getId(), exception);
     }
-  }
-
-  void restoreQuota(Purchase purchase) {
-    quotas.restore(purchase.getItem().getId().toString(), purchase.getPurchaseDate());
   }
 }

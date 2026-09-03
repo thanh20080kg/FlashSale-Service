@@ -1,16 +1,13 @@
 package com.shiro.warehouse.service.imp;
 
-import static com.shiro.warehouse.constants.OrderStatus.*;
+import static com.shiro.warehouse.dto.WarehouseDtos.Status.*;
 
 import com.shiro.warehouse.client.FlashSaleClient;
 import com.shiro.warehouse.config.AppProperties;
-import com.shiro.warehouse.constants.OrderStatus;
 import com.shiro.warehouse.constants.PurchaseStatus;
 import com.shiro.warehouse.constants.ServiceConstants;
 import com.shiro.warehouse.dto.PurchaseStatusSyncDtos;
-import com.shiro.warehouse.dto.WarehouseRequest;
-import com.shiro.warehouse.dto.WarehouseResponse;
-import com.shiro.warehouse.entity.Inventory;
+import com.shiro.warehouse.dto.WarehouseDtos;
 import com.shiro.warehouse.entity.InventoryReservation;
 import com.shiro.warehouse.repository.InventoryRepository;
 import com.shiro.warehouse.repository.InventoryReservationRepository;
@@ -25,111 +22,104 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.kafka.common.errors.ApiException;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
+/** Manages inventory reservations and synchronizes them with purchase outcomes. */
 @Service
 @RequiredArgsConstructor
 public class WarehouseServiceImp implements WarehouseService {
   private final InventoryRepository inventories;
   private final InventoryReservationRepository reservations;
   private final FlashSaleClient flashSaleClient;
-  private final RabbitTemplate rabbitTemplate;
   private final ObjectMapper objectMapper;
   private final AppProperties properties;
 
-  @Value("${app.status-sync.rabbit-queue:flashsale.purchase-status.sync}")
-  private String statusSyncQueue;
-
+  /** Reserves inventory for a purchase, preserving idempotency by reservation key. */
   @Transactional
-  public WarehouseResponse reserve(WarehouseRequest command) {
-    UUID productId = command.productId();
-    long quantity = command.quantity();
-    UUID key = command.reservationKey();
+  public WarehouseDtos.Response reserve(WarehouseDtos.Request request) {
+    UUID productId = request.productId();
+    long quantity = request.quantity();
+    UUID key = request.reservationKey();
 
     if (quantity <= 0) {
-      return new WarehouseResponse(false, INVALID, ServiceConstants.INVALID_QUANTITY_MESSAGE);
+      return responseFailure(INVALID, ServiceConstants.INVALID_QUANTITY_MESSAGE);
     }
     var existing = reservations.findByReservationKey(key);
     if (existing.isPresent()) {
       InventoryReservation reservation = existing.get();
-      OrderStatus orderStatus = OrderStatus.fromString(reservation.getStatus());
+      WarehouseDtos.Status status = WarehouseDtos.Status.fromString(reservation.getStatus());
 
-      if (orderStatus.equals(RESERVED)) {
-        orderStatus = ALREADY_RESERVED;
-      } else if (orderStatus.equals(SOLD)) {
-        orderStatus = ALREADY_SOLD;
+      if (status.equals(RESERVED)) {
+        status = ALREADY_RESERVED;
+      } else if (status.equals(SOLD)) {
+        status = ALREADY_SOLD;
       }
-      return new WarehouseResponse(
-          RESERVED.equals(OrderStatus.fromString(reservation.getStatus()))
-              || SOLD.equals(OrderStatus.fromString(reservation.getStatus())),
-          orderStatus,
-          orderStatus.defaultMessage);
-    }
-
-    Inventory inventory = inventories.findByProductId(productId).orElse(null);
-    if (inventory == null || inventory.getAvailableQuantity() < quantity) {
-      return new WarehouseResponse(false, OUT_OF_STOCK, OUT_OF_STOCK.defaultMessage);
+      boolean alreadyReserved =
+          RESERVED.equals(WarehouseDtos.Status.fromString(reservation.getStatus()))
+              || SOLD.equals(WarehouseDtos.Status.fromString(reservation.getStatus()));
+      return alreadyReserved ? responseSuccess(status) : responseFailure(status);
     }
 
     if (inventories.reserve(productId.toString(), quantity) == 0) {
-      return new WarehouseResponse(false, OUT_OF_STOCK, OUT_OF_STOCK.defaultMessage);
+      return responseFailure(OUT_OF_STOCK);
     }
     reservations.save(new InventoryReservation(key, productId, quantity));
-    return new WarehouseResponse(true, RESERVED, RESERVED.defaultMessage);
+    return responseSuccess(RESERVED);
   }
 
+  /** Releases an active inventory reservation. */
   @Transactional
-  public WarehouseResponse release(WarehouseRequest command) {
-    UUID key = command.reservationKey();
+  public WarehouseDtos.Response release(WarehouseDtos.Request request) {
+    UUID key = request.reservationKey();
     InventoryReservation reservation = reservations.findByReservationKey(key).orElse(null);
     if (ObjectUtils.isEmpty(reservation)) {
-      return new WarehouseResponse(false, NOT_EXIST, NOT_EXIST.defaultMessage);
+      return responseFailure(NOT_EXIST);
     }
-    OrderStatus orderStatus = OrderStatus.fromString(reservation.getStatus());
+    WarehouseDtos.Status orderStatus = WarehouseDtos.Status.fromString(reservation.getStatus());
     if (RELEASED.equals(orderStatus)) {
-      return new WarehouseResponse(false, ALREADY_RELEASED, ALREADY_RELEASED.defaultMessage);
+      return responseFailure(ALREADY_RELEASED);
     }
     if (SOLD.equals(orderStatus)) {
-      return new WarehouseResponse(false, SOLD, SOLD.defaultMessage);
+      return responseFailure(SOLD);
     }
     if (reservations.updateReservedStatus(key.toString(), RELEASED.name()) == 0) {
-      return new WarehouseResponse(false, ALREADY_RELEASED, ALREADY_RELEASED.defaultMessage);
+      return responseFailure(ALREADY_RELEASED);
     }
     if (inventories.release(reservation.getProductId().toString(), reservation.getQuantity())
         == 0) {
       throw new IllegalStateException(ServiceConstants.INVENTORY_NOT_FOUND_WHILE_RELEASING);
     }
-    return new WarehouseResponse(true, RELEASED, RELEASED.defaultMessage);
+    return responseSuccess(RELEASED);
   }
 
+  /** Marks a reservation as sold and decrements the corresponding inventory. */
   @Override
   @Transactional
-  public WarehouseResponse sold(WarehouseRequest command) {
-    UUID key = command.reservationKey();
+  public WarehouseDtos.Response sold(WarehouseDtos.Request request) {
+    UUID key = request.reservationKey();
     InventoryReservation reservation = reservations.findByReservationKey(key).orElse(null);
     if (ObjectUtils.isEmpty(reservation)) {
-      return new WarehouseResponse(false, NOT_EXIST, NOT_EXIST.defaultMessage);
+      return responseFailure(NOT_EXIST);
     }
-    OrderStatus orderStatus = OrderStatus.fromString(reservation.getStatus());
+    WarehouseDtos.Status orderStatus = WarehouseDtos.Status.fromString(reservation.getStatus());
     if (SOLD.equals(orderStatus)) {
-      return new WarehouseResponse(true, SOLD, SOLD.defaultMessage);
+      return responseSuccess(SOLD);
     }
     if (!RESERVED.equals(orderStatus)) {
-      return new WarehouseResponse(false, orderStatus, orderStatus.defaultMessage);
+      return responseFailure(orderStatus);
     }
     if (reservations.updateReservedStatus(key.toString(), SOLD.name()) == 0) {
-      return new WarehouseResponse(false, ALREADY_SOLD, ALREADY_SOLD.defaultMessage);
+      return responseFailure(ALREADY_SOLD);
     }
     if (inventories.sold(reservation.getProductId().toString(), reservation.getQuantity()) == 0) {
       throw new IllegalStateException(ServiceConstants.INVENTORY_NOT_FOUND_WHILE_CONFIRMING);
     }
-    return new WarehouseResponse(true, SOLD, SOLD.defaultMessage);
+    return responseSuccess(SOLD);
   }
 
+  /** Reconciles reserved inventory with purchase results from FlashSale. */
   @Override
   @Transactional
   public void syncPurchaseStatuses() {
@@ -153,14 +143,17 @@ public class WarehouseServiceImp implements WarehouseService {
               InventoryReservation reservation = byPurchaseId.get(entry.purchaseId());
               if (ObjectUtils.isNotEmpty(reservation)) {
                 if (PurchaseStatus.SUCCESS.equals(entry.status())) {
-                  sold(new WarehouseRequest(null, reservation.getReservationKey(), null, 0));
+                  sold(
+                      new WarehouseDtos.Request(null, reservation.getReservationKey(), null, null));
                 } else if (PurchaseStatus.FAILED.equals(entry.status())) {
-                  release(new WarehouseRequest(null, reservation.getReservationKey(), null, 0));
+                  release(
+                      new WarehouseDtos.Request(null, reservation.getReservationKey(), null, null));
                 }
               }
             });
   }
 
+  /** Loads purchase statuses from FlashSale and maps transport failures to service errors. */
   private PurchaseStatusSyncDtos.Response requestStatuses(List<UUID> purchaseIds) {
     try {
       return objectMapper.readValue(
@@ -171,5 +164,20 @@ public class WarehouseServiceImp implements WarehouseService {
       throw new IllegalStateException(
           "Cannot synchronize purchase statuses with FlashSale", exception);
     }
+  }
+
+  /** Creates a successful warehouse response with the status default message. */
+  private WarehouseDtos.Response responseSuccess(WarehouseDtos.Status status) {
+    return new WarehouseDtos.Response(true, status, status.defaultMessage, null, null);
+  }
+
+  /** Creates a failed warehouse response using the status default message. */
+  private WarehouseDtos.Response responseFailure(WarehouseDtos.Status status) {
+    return responseFailure(status, status.defaultMessage);
+  }
+
+  /** Creates a failed warehouse response with a custom message. */
+  private WarehouseDtos.Response responseFailure(WarehouseDtos.Status status, String message) {
+    return new WarehouseDtos.Response(false, status, message, null, null);
   }
 }

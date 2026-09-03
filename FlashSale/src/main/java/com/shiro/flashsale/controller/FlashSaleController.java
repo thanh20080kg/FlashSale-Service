@@ -2,7 +2,7 @@ package com.shiro.flashsale.controller;
 
 import com.shiro.flashsale.dto.SaleDtos;
 import com.shiro.flashsale.security.CurrentUser;
-import com.shiro.flashsale.service.SaleService;
+import com.shiro.flashsale.service.PurchaseService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/flash-sales")
 @AllArgsConstructor
 public class FlashSaleController {
-  private final SaleService service;
+  private final PurchaseService service;
 
   @GetMapping("/current-flashSale")
   public List<SaleDtos.SaleItemResponse> getCurrentFlashSaleItems() {

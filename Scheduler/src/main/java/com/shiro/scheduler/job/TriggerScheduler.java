@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/** Publishes scheduled synchronization commands to downstream services. */
 @Component
 @RequiredArgsConstructor
 public class TriggerScheduler {

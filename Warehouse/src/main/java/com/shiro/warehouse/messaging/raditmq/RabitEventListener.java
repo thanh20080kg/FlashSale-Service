@@ -1,9 +1,8 @@
 package com.shiro.warehouse.messaging.raditmq;
 
-import static com.shiro.warehouse.constants.OrderStatus.INVALID;
+import static com.shiro.warehouse.dto.WarehouseDtos.Status.*;
 
-import com.shiro.warehouse.dto.WarehouseRequest;
-import com.shiro.warehouse.dto.WarehouseResponse;
+import com.shiro.warehouse.dto.WarehouseDtos;
 import com.shiro.warehouse.service.WarehouseService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -26,22 +25,42 @@ public class RabitEventListener {
   @RabbitListener(queues = "${app.rabbit-queue.inventory-queue:warehouse.inventory.commands}")
   public String handle(String payload) {
     try {
-      logger.info("Received queue: {} payload: {}", INVENTORY_QUEUE, payload);
-      WarehouseRequest command = objectMapper.readValue(payload, WarehouseRequest.class);
-      WarehouseResponse result =
+      logger.info(
+          "RABBIT_CONSUMER_IN consumer={} queue={} payload={}",
+          "RabitEventListener.handle",
+          INVENTORY_QUEUE,
+          payload);
+      WarehouseDtos.Request command = objectMapper.readValue(payload, WarehouseDtos.Request.class);
+      WarehouseDtos.Response result =
           switch (command.operation()) {
-            case RESERVED -> service.reserve(command);
-            case RELEASED -> service.release(command);
-            case SOLD -> service.sold(command);
+            case RESERVE -> service.reserve(command);
+            case RELEASE -> service.release(command);
+            case CONFIRM -> service.sold(command);
           };
 
       String response = objectMapper.writeValueAsString(result);
-      logger.info("Received queue: {} reponse: {}", INVENTORY_QUEUE, response);
+      logger.info(
+          "RABBIT_CONSUMER_OUT consumer={} queue={} response={}",
+          "RabitEventListener.handle",
+          INVENTORY_QUEUE,
+          response);
       return response;
     } catch (Exception exception) {
-      logger.error("Error processing inventory command: {}", exception.getMessage());
-      return objectMapper.writeValueAsString(
-          new WarehouseResponse(false, INVALID, "invalid JSON command"));
+      logger.error(
+          "RABBIT_CONSUMER_ERROR consumer={} queue={} message={}",
+          "RabitEventListener.handle",
+          INVENTORY_QUEUE,
+          exception.getMessage(),
+          exception);
+      String response =
+          objectMapper.writeValueAsString(
+              new WarehouseDtos.Response(false, INVALID, "invalid JSON command", null, null));
+      logger.info(
+          "RABBIT_CONSUMER_OUT consumer={} queue={} response={}",
+          "RabitEventListener.handle",
+          INVENTORY_QUEUE,
+          response);
+      return response;
     }
   }
 }

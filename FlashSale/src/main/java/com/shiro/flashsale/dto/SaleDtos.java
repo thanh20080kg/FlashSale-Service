@@ -24,7 +24,7 @@ public final class SaleDtos {
       LocalTime endTime,
       boolean overnight) {}
 
-  public record PurchaseRequest(@NotNull UUID itemId) {}
+  public record PurchaseRequest(@NotNull UUID itemId, Integer quantity) {}
 
   public record PurchaseResponse(
       UUID purchaseId,

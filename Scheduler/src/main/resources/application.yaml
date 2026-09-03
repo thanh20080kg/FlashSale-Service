@@ -1,4 +1,9 @@
 server.port: ${SERVER_PORT:8085}
+
+logging:
+  level:
+    root: INFO
+
 spring:
   application:
     name: Scheduler

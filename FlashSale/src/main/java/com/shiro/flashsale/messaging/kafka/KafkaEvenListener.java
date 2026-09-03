@@ -2,13 +2,12 @@ package com.shiro.flashsale.messaging.kafka;
 
 import com.shiro.flashsale.service.CacheConfigService;
 import com.shiro.flashsale.service.PaymentStatusSyncService;
-import com.shiro.flashsale.service.SaleService;
+import com.shiro.flashsale.service.PurchaseService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,27 +15,51 @@ import org.springframework.stereotype.Component;
 public class KafkaEvenListener {
   private static final Logger log = LoggerFactory.getLogger(KafkaEvenListener.class);
   private final CacheConfigService cacheConfigService;
-  private final SaleService saleService;
+  private final PurchaseService purchaseService;
   private final PaymentStatusSyncService paymentStatusSyncService;
 
-  @EventListener(ApplicationReadyEvent.class)
   @KafkaListener(topics = "${app.kafka-topic.quota-reload-topic}")
-  public void reloadQuotaTrigger() {
-    log.info("Start trigger quota reload");
-    saleService.reloadQuota();
-    log.info("End trigger quota reload");
+  public void reloadQuotaTrigger(@Payload(required = false) String payload) {
+    log.info(
+        "KAFKA_CONSUMER_IN consumer={} payload={}",
+        "KafkaEvenListener.reloadQuotaTrigger",
+        payload);
+
+    purchaseService.reloadQuota();
+
+    log.info(
+        "KAFKA_CONSUMER_OUT consumer={} result={}",
+        "KafkaEvenListener.reloadQuotaTrigger",
+        "quota reloaded");
   }
 
   @KafkaListener(topics = "${app.kafka-topic.trigger-reload}")
-  public void onReloadConfigTrigger() {
-    log.info("Received maintenance configuration reload trigger");
+  public void onReloadConfigTrigger(@Payload(required = false) String payload) {
+    log.info(
+        "KAFKA_CONSUMER_IN consumer={} payload={}",
+        "KafkaEvenListener.onReloadConfigTrigger",
+        payload);
+
     cacheConfigService.reload();
-    log.info("Maintenance configuration reloaded successfully");
+
+    log.info(
+        "KAFKA_CONSUMER_OUT consumer={} result={}",
+        "KafkaEvenListener.onReloadConfigTrigger",
+        "configuration reloaded");
   }
 
   @KafkaListener(topics = "${app.kafka-topic.payment-status-sync}")
-  public void onPaymentStatusSyncTrigger() {
-    log.info("Received payment status sync trigger");
+  public void onPaymentStatusSyncTrigger(@Payload(required = false) String payload) {
+    log.info(
+        "KAFKA_CONSUMER_IN consumer={} payload={}",
+        "KafkaEvenListener.onPaymentStatusSyncTrigger",
+        payload);
+
     paymentStatusSyncService.syncPending();
+
+    log.info(
+        "KAFKA_CONSUMER_OUT consumer={} result={}",
+        "KafkaEvenListener.onPaymentStatusSyncTrigger",
+        "pending payments synchronized");
   }
 }

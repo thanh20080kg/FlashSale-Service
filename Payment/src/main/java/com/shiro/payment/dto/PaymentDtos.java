@@ -1,4 +1,4 @@
-package com.shiro.payment.messaging;
+package com.shiro.payment.dto;
 
 import java.math.BigDecimal;
 import java.util.UUID;

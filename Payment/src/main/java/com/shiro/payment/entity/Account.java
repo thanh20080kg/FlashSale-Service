@@ -1,4 +1,4 @@
-package com.shiro.payment.domain;
+package com.shiro.payment.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;

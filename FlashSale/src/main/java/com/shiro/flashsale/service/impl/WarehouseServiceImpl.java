@@ -1,10 +1,9 @@
 package com.shiro.flashsale.service.impl;
 
+import static com.shiro.flashsale.dto.client.WarehouseDtos.Status.*;
+
 import com.shiro.flashsale.client.WarehouseClient;
-import com.shiro.flashsale.constants.WareHouseOperation;
-import com.shiro.flashsale.constants.WarehouseStatus;
-import com.shiro.flashsale.dto.client.WarehouseRequest;
-import com.shiro.flashsale.dto.client.WarehouseResult;
+import com.shiro.flashsale.dto.client.WarehouseDtos;
 import com.shiro.flashsale.exception.ApiException;
 import com.shiro.flashsale.exception.ErrorCode;
 import com.shiro.flashsale.service.WarehouseService;
@@ -15,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
+/** Adapts warehouse commands to the remote warehouse service. */
 @Service
 @RequiredArgsConstructor
 public class WarehouseServiceImpl implements WarehouseService {
@@ -23,10 +23,12 @@ public class WarehouseServiceImpl implements WarehouseService {
   private final ObjectMapper objectMapper;
 
   @Override
-  public WarehouseResult reserve(UUID productId, String reservationKey) {
-    WarehouseResult response =
-        send(new WarehouseRequest(WareHouseOperation.RESERVED, reservationKey, productId, 1));
-    if (response.success() || WarehouseStatus.ALREADY_RESERVED.equals(response.status())) {
+  public WarehouseDtos.Response reserve(UUID productId, UUID reservationKey, Integer quantity) {
+    WarehouseDtos.Response response =
+        send(
+            new WarehouseDtos.Request(
+                WarehouseDtos.Operation.RESERVE, reservationKey, productId, quantity));
+    if (response.success() || ALREADY_RESERVED.equals(response.status())) {
       return response;
     }
     switch (response.status()) {
@@ -38,10 +40,12 @@ public class WarehouseServiceImpl implements WarehouseService {
   }
 
   @Override
-  public WarehouseResult sold(UUID productId, String reservationKey) {
-    WarehouseResult response =
-        send(new WarehouseRequest(WareHouseOperation.SOLD, reservationKey, productId, 1));
-    if (response.success() || WarehouseStatus.ALREADY_SOLD.equals(response.status())) {
+  public WarehouseDtos.Response sold(UUID productId, UUID reservationKey) {
+    WarehouseDtos.Response response =
+        send(
+            new WarehouseDtos.Request(
+                WarehouseDtos.Operation.CONFIRM, reservationKey, productId, null));
+    if (response.success() || ALREADY_SOLD.equals(response.status())) {
       return response;
     }
     switch (response.status()) {
@@ -52,10 +56,12 @@ public class WarehouseServiceImpl implements WarehouseService {
   }
 
   @Override
-  public WarehouseResult release(String reservationKey, UUID productId) {
-    WarehouseResult response =
-        send(new WarehouseRequest(WareHouseOperation.RELEASED, reservationKey, productId, 0));
-    if (response.success() || WarehouseStatus.ALREADY_RELEASED.equals(response.status())) {
+  public WarehouseDtos.Response release(UUID reservationKey, UUID productId) {
+    WarehouseDtos.Response response =
+        send(
+            new WarehouseDtos.Request(
+                WarehouseDtos.Operation.RELEASE, reservationKey, productId, null));
+    if (response.success() || ALREADY_RELEASED.equals(response.status())) {
       return response;
     }
     switch (response.status()) {
@@ -65,9 +71,9 @@ public class WarehouseServiceImpl implements WarehouseService {
     }
   }
 
-  private WarehouseResult send(WarehouseRequest request) {
+  private WarehouseDtos.Response send(WarehouseDtos.Request request) {
     try {
-      return objectMapper.readValue(warehouseClient.send(request), WarehouseResult.class);
+      return objectMapper.readValue(warehouseClient.send(request), WarehouseDtos.Response.class);
     } catch (ApiException exception) {
       throw exception;
     } catch (Exception exception) {
@@ -76,9 +82,10 @@ public class WarehouseServiceImpl implements WarehouseService {
     }
   }
 
-  private WarehouseResult send(WarehouseRequest request, int retry) {
+  private WarehouseDtos.Response send(WarehouseDtos.Request request, int retry) {
     try {
-      return objectMapper.readValue(warehouseClient.send(request, retry), WarehouseResult.class);
+      return objectMapper.readValue(
+          warehouseClient.send(request, retry), WarehouseDtos.Response.class);
     } catch (ApiException exception) {
       throw exception;
     } catch (Exception exception) {

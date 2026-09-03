@@ -51,13 +51,6 @@ app:
     # Tests drive the outbox by calling processPendingBatch() directly so assertions stay
     # deterministic; a background scheduler would race with them.
     enabled: false
-  rate-limit:
-    # Off by default so functional tests are not throttled. RateLimiterTest turns it back on.
-    enabled: false
-    rules:
-      auth-login-identifier:
-        limit: 3
-        window: 15m
 
 logging:
   level:

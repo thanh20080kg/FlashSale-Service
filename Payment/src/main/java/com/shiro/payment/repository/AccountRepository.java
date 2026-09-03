@@ -1,6 +1,6 @@
 package com.shiro.payment.repository;
 
-import com.shiro.payment.domain.Account;
+import com.shiro.payment.entity.Account;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;

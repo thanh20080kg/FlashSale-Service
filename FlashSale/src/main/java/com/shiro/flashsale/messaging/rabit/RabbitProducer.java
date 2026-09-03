@@ -1,6 +1,5 @@
 package com.shiro.flashsale.messaging.rabit;
 
-import com.shiro.flashsale.config.AppProperties;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
@@ -17,7 +16,6 @@ public class RabbitProducer {
 
   private final RabbitTemplate rabbitTemplate;
   private final ObjectMapper objectMapper;
-  private final AppProperties properties;
 
   public String send(String queue, Object payload) throws Exception {
     return send(queue, payload, 0);

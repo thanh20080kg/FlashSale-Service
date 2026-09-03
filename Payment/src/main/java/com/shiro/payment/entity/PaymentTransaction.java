@@ -1,5 +1,7 @@
-package com.shiro.payment.domain;
+package com.shiro.payment.entity;
 
+import com.shiro.payment.constants.TransactionStatus;
+import com.shiro.payment.constants.TransactionType;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;

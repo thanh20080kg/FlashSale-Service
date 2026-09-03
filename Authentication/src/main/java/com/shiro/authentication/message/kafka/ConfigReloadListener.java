@@ -16,8 +16,16 @@ public class ConfigReloadListener {
 
   @KafkaListener(topics = "${app.kafka.topic.maintenance}")
   public void onReloadTrigger(@Payload(required = false) String ignoredPayload) {
-    log.info("Received maintenance configuration reload trigger");
+    log.info(
+        "KAFKA_CONSUMER_IN consumer={} payload={}",
+        "ConfigReloadListener.onReloadTrigger",
+        ignoredPayload);
+
     cacheConfigService.reload();
-    log.info("Maintenance configuration reloaded successfully");
+
+    log.info(
+        "KAFKA_CONSUMER_OUT consumer={} result={}",
+        "ConfigReloadListener.onReloadTrigger",
+        "configuration reloaded");
   }
 }
