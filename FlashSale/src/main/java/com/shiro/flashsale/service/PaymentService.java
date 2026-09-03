@@ -23,7 +23,6 @@ public class PaymentService {
   private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
   private final PaymentClient client;
   private final ObjectMapper objectMapper;
-  private final PaymentService payment;
   private final WarehouseService warehouse;
   private final PurchaseRepository purchases;
   private final FlashSaleItemQuotaRepository quotas;
@@ -62,7 +61,7 @@ public class PaymentService {
   /** Synchronizes one purchase and its warehouse reservation in a transaction. */
   @Transactional
   public void sync(Purchase purchase) {
-    switch (payment.getStatus(purchase.getId()).status()) {
+    switch (getStatus(purchase.getId()).status()) {
       case COMPLETE -> handleCompletedPayment(purchase);
       case PENDING -> handlePendingPayment(purchase);
       case FAILED, CANCELLED -> handleFailedPayment(purchase);
@@ -83,7 +82,7 @@ public class PaymentService {
   }
 
   private void handlePendingPayment(Purchase purchase) {
-    payment.cancel(purchase.getId());
+    cancel(purchase.getId());
     failPurchaseAndReleaseReservation(purchase);
   }
 
