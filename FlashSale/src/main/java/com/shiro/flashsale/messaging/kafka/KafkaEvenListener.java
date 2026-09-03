@@ -20,46 +20,30 @@ public class KafkaEvenListener {
 
   @KafkaListener(topics = "${app.kafka-topic.quota-reload-topic}")
   public void reloadQuotaTrigger(@Payload(required = false) String payload) {
-    log.info(
-        "KAFKA_CONSUMER_IN consumer={} payload={}",
-        "KafkaEvenListener.reloadQuotaTrigger",
-        payload);
-
+    log.info("KAFKA_CONSUMER_IN consumer=KafkaEvenListener.reloadQuotaTrigger payload={}", payload);
     purchaseService.reloadQuota();
-
     log.info(
-        "KAFKA_CONSUMER_OUT consumer={} result={}",
-        "KafkaEvenListener.reloadQuotaTrigger",
-        "quota reloaded");
+        "KAFKA_CONSUMER_OUT consumer=KafkaEvenListener.reloadQuotaTrigger result=quota reloaded");
   }
 
   @KafkaListener(topics = "${app.kafka-topic.trigger-reload}")
   public void onReloadConfigTrigger(@Payload(required = false) String payload) {
     log.info(
-        "KAFKA_CONSUMER_IN consumer={} payload={}",
-        "KafkaEvenListener.onReloadConfigTrigger",
-        payload);
-
+        "KAFKA_CONSUMER_IN consumer=KafkaEvenListener.onReloadConfigTrigger payload={}", payload);
     cacheConfigService.reload();
-
     log.info(
-        "KAFKA_CONSUMER_OUT consumer={} result={}",
-        "KafkaEvenListener.onReloadConfigTrigger",
-        "configuration reloaded");
+        "KAFKA_CONSUMER_OUT consumer=KafkaEvenListener.onReloadConfigTrigger result=configuration reloaded");
   }
 
   @KafkaListener(topics = "${app.kafka-topic.payment-status-sync}")
   public void onPaymentStatusSyncTrigger(@Payload(required = false) String payload) {
     log.info(
-        "KAFKA_CONSUMER_IN consumer={} payload={}",
-        "KafkaEvenListener.onPaymentStatusSyncTrigger",
+        "KAFKA_CONSUMER_IN consumer=KafkaEvenListener.onPaymentStatusSyncTrigger payload={}",
         payload);
 
     paymentStatusSyncService.syncPending();
 
     log.info(
-        "KAFKA_CONSUMER_OUT consumer={} result={}",
-        "KafkaEvenListener.onPaymentStatusSyncTrigger",
-        "pending payments synchronized");
+        "KAFKA_CONSUMER_OUT consumer=KafkaEvenListener.onPaymentStatusSyncTrigger result=pending payments synchronized");
   }
 }

@@ -19,6 +19,7 @@ public class PaymentCommandListener {
   @RabbitListener(queues = "${app.rabbit-queue.payment-command}")
   public String handle(String payload) {
     log.info("RABBIT_CONSUMER_IN consumer={} payload={}", "PaymentCommandListener.handle", payload);
+    String responsePayload;
     try {
       PaymentDtos.Request request = objectMapper.readValue(payload, PaymentDtos.Request.class);
       PaymentDtos.Response response =
@@ -33,21 +34,16 @@ public class PaymentCommandListener {
             case CANCEL -> service.cancel(request.purchaseId());
             case STATUS -> service.status(request.purchaseId());
           };
-      String responsePayload = objectMapper.writeValueAsString(response);
-      log.info(
-          "RABBIT_CONSUMER_OUT consumer={} response={}",
-          "PaymentCommandListener.handle",
-          responsePayload);
-      return responsePayload;
+      responsePayload = objectMapper.writeValueAsString(response);
     } catch (Exception exception) {
-      String responsePayload =
+      log.error("RABBIT_CONSUMER_OUT consumer=PaymentCommandListener.handle exception=", exception);
+      responsePayload =
           objectMapper.writeValueAsString(
               new PaymentDtos.Response(false, null, null, "FAILED", exception.getMessage()));
-      log.info(
-          "RABBIT_CONSUMER_OUT consumer={} response={}",
-          "PaymentCommandListener.handle",
-          responsePayload);
-      return responsePayload;
     }
+
+    log.info(
+        "RABBIT_CONSUMER_OUT consumer=PaymentCommandListener.handle response={}", responsePayload);
+    return responsePayload;
   }
 }

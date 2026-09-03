@@ -33,7 +33,7 @@ public class NotificationConsumer {
   @KafkaListener(topics = "${app.kafka.topic}", groupId = "${app.kafka.group-id}")
   @Transactional(readOnly = true)
   public void consume(String payload) throws Exception {
-    log.info("KAFKA_CONSUMER_IN consumer={} payload={}", "NotificationConsumer.consume", payload);
+    log.info("KAFKA_CONSUMER_IN consumer=NotificationConsumer.consume payload={}", payload);
     NotificationMessage message = objectMapper.readValue(payload, NotificationMessage.class);
     NotificationType type = NotificationType.valueOf(message.type());
     TemplateData template = template(message.templateCode());
@@ -42,8 +42,7 @@ public class NotificationConsumer {
     }
     String content = render(template.content(), message.params());
     log.info(
-        "KAFKA_CONSUMER_OUT consumer={} type={} to={} template={} content={}",
-        "NotificationConsumer.consume",
+        "KAFKA_CONSUMER_OUT consumer=NotificationConsumer.consume type={} to={} template={} content={}",
         type,
         message.recipient(),
         message.templateCode(),

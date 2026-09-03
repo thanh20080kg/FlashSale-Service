@@ -18,13 +18,10 @@ public class PurchaseStatusSyncTriggerListener {
   @KafkaListener(topics = "${app.kafka-topic.trigger-status-sync}")
   public void onSyncTrigger(@Payload(required = false) String ignoredPayload) {
     log.info(
-        "KAFKA_CONSUMER_IN consumer={} payload={}",
-        "PurchaseStatusSyncTriggerListener.onSyncTrigger",
+        "KAFKA_CONSUMER_IN consumer=PurchaseStatusSyncTriggerListener.onSyncTrigger payload={}",
         ignoredPayload);
     warehouseService.syncPurchaseStatuses();
     log.info(
-        "KAFKA_CONSUMER_OUT consumer={} result={}",
-        "PurchaseStatusSyncTriggerListener.onSyncTrigger",
-        "purchase statuses synchronized");
+        "KAFKA_CONSUMER_OUT consumer=PurchaseStatusSyncTriggerListener.onSyncTrigger result=purchase statuses synchronized");
   }
 }

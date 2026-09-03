@@ -24,10 +24,10 @@ public class RabitEventListener {
 
   @RabbitListener(queues = "${app.rabbit-queue.inventory-queue:warehouse.inventory.commands}")
   public String handle(String payload) {
+    String response;
     try {
       logger.info(
-          "RABBIT_CONSUMER_IN consumer={} queue={} payload={}",
-          "RabitEventListener.handle",
+          "RABBIT_CONSUMER_IN consumer=RabitEventListener.handle queue={} payload={}",
           INVENTORY_QUEUE,
           payload);
       WarehouseDtos.Request command = objectMapper.readValue(payload, WarehouseDtos.Request.class);
@@ -38,29 +38,21 @@ public class RabitEventListener {
             case CONFIRM -> service.sold(command);
           };
 
-      String response = objectMapper.writeValueAsString(result);
-      logger.info(
-          "RABBIT_CONSUMER_OUT consumer={} queue={} response={}",
-          "RabitEventListener.handle",
-          INVENTORY_QUEUE,
-          response);
-      return response;
+      response = objectMapper.writeValueAsString(result);
     } catch (Exception exception) {
       logger.error(
-          "RABBIT_CONSUMER_ERROR consumer={} queue={} message={}",
-          "RabitEventListener.handle",
+          "RABBIT_CONSUMER_ERROR consumer=RabitEventListener.handle queue={} message={}",
           INVENTORY_QUEUE,
           exception.getMessage(),
           exception);
-      String response =
+      response =
           objectMapper.writeValueAsString(
               new WarehouseDtos.Response(false, INVALID, "invalid JSON command", null, null));
-      logger.info(
-          "RABBIT_CONSUMER_OUT consumer={} queue={} response={}",
-          "RabitEventListener.handle",
-          INVENTORY_QUEUE,
-          response);
-      return response;
     }
+    logger.info(
+        "RABBIT_CONSUMER_OUT consumer=RabitEventListener.handle queue={} response={}",
+        INVENTORY_QUEUE,
+        response);
+    return response;
   }
 }

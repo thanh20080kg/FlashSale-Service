@@ -17,15 +17,10 @@ public class ConfigReloadListener {
   @KafkaListener(topics = "${app.kafka.topic.maintenance}")
   public void onReloadTrigger(@Payload(required = false) String ignoredPayload) {
     log.info(
-        "KAFKA_CONSUMER_IN consumer={} payload={}",
-        "ConfigReloadListener.onReloadTrigger",
+        "KAFKA_CONSUMER_IN consumer=ConfigReloadListener.onReloadTrigger payload={}",
         ignoredPayload);
-
     cacheConfigService.reload();
-
     log.info(
-        "KAFKA_CONSUMER_OUT consumer={} result={}",
-        "ConfigReloadListener.onReloadTrigger",
-        "configuration reloaded");
+        "KAFKA_CONSUMER_OUT consumer=ConfigReloadListener.onReloadTrigger result=configuration reloaded");
   }
 }
