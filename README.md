@@ -254,9 +254,9 @@ Purchase flow:
 8. FlashSale -> Warehouse: mark the reservation as SOLD
 ```
 
-Atomic database updates, Redis caching, unique reservation keys, and scheduled status synchronization are used to
-prevent overselling and duplicate processing. The database quota is the source of truth; Redis is used for cached
-listing data and quota-cache reloads, not as the final purchase authority.
+Atomic database updates, Redis quota counters, unique reservation keys, and scheduled status synchronization are used
+to prevent overselling and duplicate processing. Redis quota is initialized during startup and consumed as a fast
+guard; the database quota remains the final source of truth. Redis is also used for short-lived listing caching.
 
 ### 3.7 Get Purchase History
 
@@ -286,7 +286,8 @@ topic does not trigger a runtime reload at present.
 The scheduler triggers FlashSale to inspect pending purchases older than `PAYMENT_SYNC_AGE` (default `5m`). FlashSale
 queries Payment and, for completed payments, marks the purchase successful and finalizes Warehouse; for failed or
 cancelled payments, it marks the purchase failed, restores the quota, and releases Warehouse inventory. If Payment still
-returns `PENDING`, the current implementation leaves the purchase unchanged for a later synchronization cycle.
+returns `PENDING`, FlashSale attempts payment confirmation; if confirmation still cannot complete, the purchase remains
+`PENDING` for a later synchronization cycle.
 
 ### 4.3 Warehouse Purchase-Status Synchronization
 

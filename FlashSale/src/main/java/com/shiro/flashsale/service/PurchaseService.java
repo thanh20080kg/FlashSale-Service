@@ -1,16 +1,17 @@
 package com.shiro.flashsale.service;
 
+import com.shiro.flashsale.dto.PurchaseDtos;
 import com.shiro.flashsale.dto.PurchaseStatusSyncDtos;
-import com.shiro.flashsale.dto.SaleDtos;
+import com.shiro.flashsale.dto.SaleItemResponse;
 import java.util.List;
 import java.util.UUID;
 
 public interface PurchaseService {
-  List<SaleDtos.SaleItemResponse> currentItems();
+  List<SaleItemResponse> currentItems();
 
-  SaleDtos.PurchaseResponse purchase(UUID userId, SaleDtos.PurchaseRequest request);
+  PurchaseDtos.PurchaseResponse purchase(UUID userId, PurchaseDtos.PurchaseRequest request);
 
-  List<SaleDtos.PurchaseHistoryResponse> purchaseHistory(UUID userId, int limit);
+  List<PurchaseDtos.PurchaseHistoryResponse> purchaseHistory(UUID userId, int limit);
 
   void reloadQuota();
 

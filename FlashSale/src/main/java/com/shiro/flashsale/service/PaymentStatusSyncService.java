@@ -19,7 +19,7 @@ public class PaymentStatusSyncService {
   private static final Logger log = LoggerFactory.getLogger(PaymentStatusSyncService.class);
   private final AppProperties properties;
   private final PurchaseRepository purchases;
-  private final PaymentService payment;
+  private final PurchaseExecuter paymentExecuter;
 
   /** Processes only pending purchases older than five minutes. */
   public void syncPending() {
@@ -30,7 +30,7 @@ public class PaymentStatusSyncService {
             PageRequest.of(0, properties.getPayment().getSyncBatchSize()));
     for (Purchase purchase : batch) {
       try {
-        payment.sync(purchase);
+        paymentExecuter.sync(purchase);
       } catch (Exception exception) {
         log.error(
             "Failed to sync purchase status for purchase id: {}", purchase.getId(), exception);

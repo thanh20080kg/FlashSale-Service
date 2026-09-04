@@ -69,7 +69,8 @@ public class AuthServiceImpl implements AuthService {
     AuthChannel channel = getChannel(identifier);
     rateLimiter.consume("auth-register-identifier", identifier);
 
-    if (users.existsByIdentifier(identifier)) {
+    boolean identifierExists = users.existsByIdentifier(identifier);
+    if (identifierExists) {
       throw new AuthException(ErrorCode.IDENTIFIER_ALREADY_REGISTERED);
     }
 
@@ -160,7 +161,7 @@ public class AuthServiceImpl implements AuthService {
       }
 
       String userId = redis.opsForValue().get(sessionKey(tokenId));
-      if (ObjectUtils.isEmpty(userId) || !ObjectUtils.equals(userId, jwt.getSubject())) {
+      if (ObjectUtils.isEmpty(userId) || !userId.equals(jwt.getSubject())) {
         return Optional.empty();
       }
 
@@ -262,7 +263,7 @@ public class AuthServiceImpl implements AuthService {
 
   /** Ensures the pending registration belongs to the requested identifier. */
   private void validatePendingRegistration(String identifier, Map<Object, Object> pending) {
-    if (!ObjectUtils.equals(identifier, String.valueOf(pending.get(Constant.IDENTIFIER)))) {
+    if (!identifier.equals(String.valueOf(pending.get(Constant.IDENTIFIER)))) {
       throw new AuthException(ErrorCode.REGISTRATION_INVALID);
     }
   }
@@ -310,7 +311,8 @@ public class AuthServiceImpl implements AuthService {
   /** Atomically consumes the OTP and persists the new user. */
   private void saveVerifiedUser(User user, OtpChallenge challenge) {
     try {
-      if (otps.consume(challenge.getId().toString()) != 1) {
+      int consumedOtps = otps.consume(challenge.getId().toString());
+      if (consumedOtps != 1) {
         throw new AuthException(ErrorCode.OTP_INVALID);
       }
       users.saveAndFlush(user);

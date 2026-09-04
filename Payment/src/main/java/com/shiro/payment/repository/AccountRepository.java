@@ -13,7 +13,7 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
   @Query(
       value = "SELECT COUNT(*) FROM accounts WHERE id = :accountId AND active = TRUE",
       nativeQuery = true)
-  long countActive(@Param("accountId") String accountId);
+  int countActive(@Param("accountId") String accountId);
 
   @Modifying(flushAutomatically = true)
   @Query(

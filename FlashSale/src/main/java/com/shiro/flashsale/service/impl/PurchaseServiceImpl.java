@@ -2,8 +2,9 @@ package com.shiro.flashsale.service.impl;
 
 import com.shiro.flashsale.config.AppProperties;
 import com.shiro.flashsale.constants.RedisKeyConstants;
+import com.shiro.flashsale.dto.PurchaseDtos;
 import com.shiro.flashsale.dto.PurchaseStatusSyncDtos;
-import com.shiro.flashsale.dto.SaleDtos;
+import com.shiro.flashsale.dto.SaleItemResponse;
 import com.shiro.flashsale.entity.FlashSaleItem;
 import com.shiro.flashsale.entity.FlashSaleItemQuota;
 import com.shiro.flashsale.exception.ApiException;
@@ -22,14 +23,13 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,24 +51,24 @@ public class PurchaseServiceImpl implements PurchaseService {
   private final AppProperties properties;
 
   @Override
-  public List<SaleDtos.SaleItemResponse> currentItems() {
+  public List<SaleItemResponse> currentItems() {
     LocalDate today = LocalDate.now();
     LocalTime now = LocalTime.now();
     String cacheKey =
         RedisKeyConstants.SALE_CURRENT + today + ":" + now.getHour() + ":" + now.getMinute();
 
-    List<SaleDtos.SaleItemResponse> cached = readCache(cacheKey);
+    List<SaleItemResponse> cached = readCache(cacheKey);
     if (ObjectUtils.isNotEmpty(cached)) {
       return cached;
     }
 
-    List<SaleDtos.SaleItemResponse> response = loadCurrentItems(today, now);
+    List<SaleItemResponse> response = loadCurrentItems(today, now);
     writeCache(cacheKey, response);
     return response;
   }
 
   @Override
-  public SaleDtos.PurchaseResponse purchase(UUID userId, SaleDtos.PurchaseRequest request) {
+  public PurchaseDtos.PurchaseResponse purchase(UUID userId, PurchaseDtos.PurchaseRequest request) {
     LocalDate today = LocalDate.now();
     LocalTime now = LocalTime.now();
     String itemQuotasKey = RedisKeyConstants.ITEM_QUOTA + today + ":" + request.getItemId();
@@ -91,13 +91,12 @@ public class PurchaseServiceImpl implements PurchaseService {
           "Purchase execution failed, userId={}, itemId={}", userId, request.getItemId(), failure);
       rollBackRedisQuotas(itemQuotasKey, quantity);
       if (failure instanceof PurchaseResponseException responseException) {
-        return (SaleDtos.PurchaseResponse) responseException.getObject();
+        return (PurchaseDtos.PurchaseResponse) responseException.getObject();
       }
       throw failure;
     }
   }
 
-  @EventListener(ApplicationReadyEvent.class)
   @Override
   public void reloadQuota() {
     ZonedDateTime current = ZonedDateTime.now(properties.getTimezone());
@@ -129,12 +128,12 @@ public class PurchaseServiceImpl implements PurchaseService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<SaleDtos.PurchaseHistoryResponse> purchaseHistory(UUID userId, int limit) {
+  public List<PurchaseDtos.PurchaseHistoryResponse> purchaseHistory(UUID userId, int limit) {
     int pageSize = Math.max(1, Math.min(limit, 100));
     return purchases.findHistory(userId, PageRequest.of(0, pageSize)).stream()
         .map(
             p ->
-                SaleDtos.PurchaseHistoryResponse.builder()
+                PurchaseDtos.PurchaseHistoryResponse.builder()
                     .purchaseId(p.getId())
                     .itemId(p.getItem().getId())
                     .sku(p.getItem().getProduct().getSku())
@@ -150,7 +149,8 @@ public class PurchaseServiceImpl implements PurchaseService {
   @Override
   @Transactional(readOnly = true)
   public PurchaseStatusSyncDtos.Response getStatus(List<UUID> purchaseIds) {
-    if (purchaseIds == null || purchaseIds.isEmpty()) {
+    boolean isEmpty = Optional.ofNullable(purchaseIds).orElseGet(List::of).isEmpty();
+    if (isEmpty) {
       return new PurchaseStatusSyncDtos.Response(List.of());
     }
     List<PurchaseStatusSyncDtos.Entry> entries =
@@ -160,7 +160,7 @@ public class PurchaseServiceImpl implements PurchaseService {
     return new PurchaseStatusSyncDtos.Response(entries);
   }
 
-  private List<SaleDtos.SaleItemResponse> loadCurrentItems(LocalDate today, LocalTime now) {
+  private List<SaleItemResponse> loadCurrentItems(LocalDate today, LocalTime now) {
     List<FlashSaleItem> active = items.findCurrent(today, now);
     if (active.isEmpty()) {
       return List.of();
@@ -179,7 +179,7 @@ public class PurchaseServiceImpl implements PurchaseService {
     return active.stream()
         .map(
             i ->
-                SaleDtos.SaleItemResponse.builder()
+                SaleItemResponse.builder()
                     .itemId(i.getId())
                     .productId(i.getProduct().getId())
                     .sku(i.getProduct().getSku())
@@ -197,7 +197,7 @@ public class PurchaseServiceImpl implements PurchaseService {
         .toList();
   }
 
-  private List<SaleDtos.SaleItemResponse> readCache(String key) {
+  private List<SaleItemResponse> readCache(String key) {
     try {
       String raw = redisService.get(key);
       if (ObjectUtils.isEmpty(raw)) {
@@ -211,7 +211,7 @@ public class PurchaseServiceImpl implements PurchaseService {
     }
   }
 
-  private void writeCache(String key, List<SaleDtos.SaleItemResponse> value) {
+  private void writeCache(String key, List<SaleItemResponse> value) {
     try {
       redisService.set(
           key,

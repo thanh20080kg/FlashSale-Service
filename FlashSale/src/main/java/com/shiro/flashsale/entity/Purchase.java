@@ -28,6 +28,9 @@ public class Purchase {
   @JoinColumn(name = "flash_sale_item_id", nullable = false)
   private FlashSaleItem item;
 
+  @Column(nullable = false)
+  private Integer quantity;
+
   @Column(nullable = false, precision = 19, scale = 2)
   private BigDecimal amount;
 
@@ -50,9 +53,15 @@ public class Purchase {
   protected Purchase() {}
 
   public Purchase(
-      UUID customerId, FlashSaleItem item, BigDecimal amount, LocalDate date, Instant createdAt) {
+      UUID customerId,
+      FlashSaleItem item,
+      Integer quantity,
+      BigDecimal amount,
+      LocalDate date,
+      Instant createdAt) {
     this.customerId = customerId;
     this.item = item;
+    this.quantity = quantity;
     this.amount = amount;
     this.purchaseDate = date;
     this.createdAt = createdAt;

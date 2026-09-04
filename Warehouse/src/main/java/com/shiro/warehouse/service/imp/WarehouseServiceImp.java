@@ -63,7 +63,8 @@ public class WarehouseServiceImp implements WarehouseService {
       return alreadyReserved ? responseSuccess(status) : responseFailure(status);
     }
 
-    if (inventories.reserve(productId.toString(), quantity) == 0) {
+    int reservedInventoryRows = inventories.reserve(productId.toString(), quantity);
+    if (reservedInventoryRows == 0) {
       return responseFailure(OUT_OF_STOCK);
     }
     reservations.save(new InventoryReservation(key, productId, quantity));
@@ -85,11 +86,13 @@ public class WarehouseServiceImp implements WarehouseService {
     if (SOLD.equals(orderStatus)) {
       return responseFailure(SOLD);
     }
-    if (reservations.updateReservedStatus(key.toString(), RELEASED.name()) == 0) {
+    int releasedReservationRows = reservations.updateReservedStatus(key.toString(), RELEASED.name());
+    if (releasedReservationRows == 0) {
       return responseFailure(ALREADY_RELEASED);
     }
-    if (inventories.release(reservation.getProductId().toString(), reservation.getQuantity())
-        == 0) {
+    int releasedInventoryRows =
+        inventories.release(reservation.getProductId().toString(), reservation.getQuantity());
+    if (releasedInventoryRows == 0) {
       throw new IllegalStateException(ServiceConstants.INVENTORY_NOT_FOUND_WHILE_RELEASING);
     }
     return responseSuccess(RELEASED);
@@ -111,10 +114,13 @@ public class WarehouseServiceImp implements WarehouseService {
     if (!RESERVED.equals(orderStatus)) {
       return responseFailure(orderStatus);
     }
-    if (reservations.updateReservedStatus(key.toString(), SOLD.name()) == 0) {
+    int soldReservationRows = reservations.updateReservedStatus(key.toString(), SOLD.name());
+    if (soldReservationRows == 0) {
       return responseFailure(ALREADY_SOLD);
     }
-    if (inventories.sold(reservation.getProductId().toString(), reservation.getQuantity()) == 0) {
+    int soldInventoryRows =
+        inventories.sold(reservation.getProductId().toString(), reservation.getQuantity());
+    if (soldInventoryRows == 0) {
       throw new IllegalStateException(ServiceConstants.INVENTORY_NOT_FOUND_WHILE_CONFIRMING);
     }
     return responseSuccess(SOLD);

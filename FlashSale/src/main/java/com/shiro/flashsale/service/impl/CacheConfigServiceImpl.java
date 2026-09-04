@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 /** Loads and exposes runtime sale configuration used by the flash-sale workflow. */
@@ -29,7 +27,6 @@ public class CacheConfigServiceImpl implements CacheConfigService {
     return Boolean.parseBoolean(value);
   }
 
-  @EventListener(ApplicationReadyEvent.class)
   @Override
   public void reload() {
     Map<String, String> loaded = new HashMap<>();

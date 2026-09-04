@@ -57,7 +57,8 @@ public class MaintenanceFilter extends OncePerRequestFilter {
       return;
     }
     Route route = routeFor(request);
-    if (cacheConfigService.isMaintenance(ObjectUtils.isEmpty(route) ? null : route.configKey())) {
+    String configKey = ObjectUtils.isEmpty(route) ? null : route.configKey();
+    if (cacheConfigService.isMaintenance(configKey)) {
       writeMaintenanceResponse(response);
       return;
     }

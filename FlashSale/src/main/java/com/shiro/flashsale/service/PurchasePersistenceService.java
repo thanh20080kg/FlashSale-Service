@@ -26,16 +26,18 @@ public class PurchasePersistenceService {
   /** Updates a purchase status and flushes the change immediately. */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void updateStatus(UUID purchaseId, PurchaseStatus status) {
-    if (purchases.updateStatus(purchaseId.toString(), status.name(), Instant.now()) != 1)
+    int updatedRows = purchases.updateStatus(purchaseId.toString(), status.name(), Instant.now());
+    if (updatedRows != 1)
       throw new IllegalStateException(ServiceConstants.PURCHASE_STATUS_UPDATE_FAILED + purchaseId);
   }
 
   /** Associates a payment transaction with a purchase awaiting payment completion. */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void paymentPending(UUID purchaseId, UUID transactionId) {
-    if (purchases.updatePaymentTransaction(
-            purchaseId.toString(), transactionId.toString(), Instant.now())
-        != 1)
+    int updatedRows =
+        purchases.updatePaymentTransaction(
+            purchaseId.toString(), transactionId.toString(), Instant.now());
+    if (updatedRows != 1)
       throw new IllegalStateException(ServiceConstants.PURCHASE_PAYMENT_UPDATE_FAILED + purchaseId);
   }
 }
